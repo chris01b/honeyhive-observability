@@ -10,6 +10,19 @@ type LlmResponse = {
   responseTimeMs: number;
 };
 
+const fmtNumber = (n: number | undefined, digits = 0) =>
+  typeof n === "number" && Number.isFinite(n) ? n.toFixed(digits) : "—";
+
+const fmtTime = (iso?: string, locale = "en-US", timeZone = "UTC") => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return new Intl.DateTimeFormat(locale, {
+    timeZone, year: "2-digit", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit"
+  }).format(d);
+};
+
 function parseData(json: any): LlmResponse[] {
   if (!json.responses || !Array.isArray(json.responses)) {
     throw new Error("Expected responses array");
@@ -27,6 +40,12 @@ function parseData(json: any): LlmResponse[] {
 export default function Page() {
   const [data, setData] = useState<LlmResponse[]>([]);
   const [error, setError] = useState<string>("");
+
+  const locale = typeof navigator !== "undefined" ? navigator.language : "en-US";
+  const timeZone =
+    typeof Intl !== "undefined"
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      : "UTC";
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -79,10 +98,10 @@ export default function Page() {
               {data.map((response) => (
                 <tr key={response.id} className="border-b">
                   <td>{response.id}</td>
-                  <td>{response.timestamp}</td>
+                  <td>{fmtTime(response.timestamp, locale, timeZone)}</td>
                   <td>{response.model}</td>
                   <td>{response.status}</td>
-                  <td>{response.responseTimeMs}</td>
+                  <td>{fmtNumber(response.responseTimeMs)}</td>
                 </tr>
               ))}
             </tbody>
