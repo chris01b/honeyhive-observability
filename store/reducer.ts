@@ -15,6 +15,18 @@ export function reducer(state: UiState, action: any): UiState {
     case "set/sloMs":
       return { ...state, sloMs: action.payload };
 
+    case "worker/results":
+      return { 
+        ...state, 
+        workerResults: action.payload 
+      };
+
+    case "worker/error":
+      return { 
+        ...state, 
+        workerError: action.payload?.message || "Worker error" 
+      };
+
     default:
       return state;
   }

@@ -13,4 +13,14 @@ export type UiState = {
   sloMs: number;
   locale: string;
   timeZone: string;
+  workerResults?: {
+    histBins: HistBin[];
+    stats: {
+      n: number;
+      p50?: number;
+      p95?: number;
+      p99?: number;
+    };
+  };
+  workerError?: string;
 };
