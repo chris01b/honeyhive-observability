@@ -66,7 +66,7 @@ const initialState: UiState = {
   settings: {
     locale: defaultLocale,
     timeZone: defaultZone,
-    sloMs: 800,
+    sloMs: 2000,
     desiredBins: 40,
     binWidthMs: undefined
   },
@@ -204,10 +204,10 @@ export default function Page() {
               }}
               onBlur={() => {
                 if (!sloInput || Number(sloInput) <= 0) {
-                  setSloInput("800");
+                  setSloInput("2000");
                   dispatch({
                     type: "settings/set",
-                    payload: { sloMs: 800 }
+                    payload: { sloMs: 2000 }
                   });
                 }
               }}

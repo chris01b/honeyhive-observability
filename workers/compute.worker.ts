@@ -9,7 +9,7 @@ let sort: SortState = null;
 let settings: Settings = {
   locale: "en-US",
   timeZone: "UTC", 
-  sloMs: 800,
+  sloMs: 2000,
   desiredBins: 40,
   binWidthMs: undefined
 };
