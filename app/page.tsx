@@ -6,12 +6,18 @@ import {
   CartesianGrid, XAxis, YAxis, Tooltip
 } from "recharts";
 
-type LlmResponse = {
-  id: string;
-  timestamp: string;
-  model: string;
-  status: string;
-  responseTimeMs: number;
+type LlmResponseRecord = {
+  id?: string;
+  timestamp?: string;
+  responseTimeMs?: number;
+  model?: string;
+  status?: string;
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+  costUsd?: number;
+  qualityScore?: number;
+  responseText?: string;
 };
 
 type HistBin = { startMs: number; endMs: number; count: number; pct: number };
@@ -70,23 +76,45 @@ function buildHistogram(lats: number[], desiredBins = 24): {
   return { bins, p50, p95, p99 };
 }
 
-function parseData(json: any): LlmResponse[] {
-  if (!json.responses || !Array.isArray(json.responses)) {
-    throw new Error("Expected responses array");
+function parseData(json: any): LlmResponseRecord[] {
+  if (typeof json !== "object" || json === null || !Array.isArray(json.responses)) {
+    throw new Error("Invalid file: expected an object with a 'responses' array.");
   }
-  
-  return json.responses.map((item: any) => ({
-    id: item.id || "",
-    timestamp: item.timestamp || "",
-    model: item.model || "",
-    status: item.status || "",
-    responseTimeMs: item.response_time_ms || 0
-  }));
+
+  const toNum = (v: any): number | undefined =>
+    typeof v === "number" && Number.isFinite(v) ? v : undefined;
+
+  return json.responses.map((r: any) => {
+    const prompt = toNum(r.prompt_tokens);
+    const completion = toNum(r.completion_tokens);
+    const totalTokensExplicit = toNum(r.total_tokens);
+    const totalTokens =
+      totalTokensExplicit ??
+      (prompt != null || completion != null
+        ? (prompt ?? 0) + (completion ?? 0)
+        : undefined);
+
+    const quality = toNum(r?.evaluation_metrics?.response_quality);
+
+    return {
+      id: typeof r.id === "string" ? r.id : undefined,
+      timestamp: typeof r.timestamp === "string" ? r.timestamp : undefined,
+      responseTimeMs: toNum(r.response_time_ms),
+      model: typeof r.model === "string" ? r.model : undefined,
+      status: typeof r.status === "string" ? r.status : undefined,
+      promptTokens: prompt,
+      completionTokens: completion,
+      totalTokens,
+      costUsd: toNum(r.cost_usd),
+      qualityScore: quality,
+      responseText: typeof r.output === "string" ? r.output : undefined
+    };
+  });
 }
 
 export default function Page() {
-  const [data, setData] = useState<LlmResponse[]>([]);
-  const [error, setError] = useState<string>("");
+  const [records, setRecords] = useState<LlmResponseRecord[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const locale = typeof navigator !== "undefined" ? navigator.language : "en-US";
   const timeZone =
@@ -95,8 +123,8 @@ export default function Page() {
       : "UTC";
 
   const latencies = useMemo(
-    () => data.map(r => Number(r.responseTimeMs)).filter((n) => Number.isFinite(n)),
-    [data]
+    () => records.map(r => Number(r.responseTimeMs)).filter((n) => Number.isFinite(n)),
+    [records]
   );
 
   const { bins, p50, p95, p99 } = useMemo(
@@ -113,15 +141,15 @@ export default function Page() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setError(null);
     try {
       const text = await file.text();
       const json = JSON.parse(text);
       const parsed = parseData(json);
-      setData(parsed);
-      setError("");
-    } catch (err) {
-      setError("Failed to parse JSON file");
-      setData([]);
+      setRecords(parsed);
+    } catch (e: any) {
+      setRecords([]);
+      setError(`${file.name ? `in ${file.name}: ` : ""}${e?.message ?? "Failed to parse JSON."}`);
     }
   };
 
@@ -144,7 +172,7 @@ export default function Page() {
       )}
 
       <div>
-        <h2>Responses ({data.length})</h2>
+        <h2>Responses ({records.length})</h2>
         {latencies.length > 0 && (
           <div>
             <p>Latency data points: {latencies.length}</p>
@@ -166,7 +194,7 @@ export default function Page() {
             </ResponsiveContainer>
           </div>
         )}
-        {data.length > 0 ? (
+        {records.length > 0 ? (
           <table className="w-full">
             <thead>
               <tr className="">
@@ -178,13 +206,13 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {data.map((response) => (
-                <tr key={response.id} className="border-b">
-                  <td>{response.id}</td>
-                  <td>{fmtTime(response.timestamp, locale, timeZone)}</td>
-                  <td>{response.model}</td>
-                  <td>{response.status}</td>
-                  <td>{fmtNumber(response.responseTimeMs)}</td>
+              {records.map((r, i) => (
+                <tr key={r.id ?? i} className="border-b">
+                  <td>{r.id ?? "—"}</td>
+                  <td>{fmtTime(r.timestamp, locale, timeZone)}</td>
+                  <td>{r.model ?? "—"}</td>
+                  <td>{r.status ?? "—"}</td>
+                  <td>{fmtNumber(r.responseTimeMs)}</td>
                 </tr>
               ))}
             </tbody>
