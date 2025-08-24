@@ -9,6 +9,7 @@ import { HistogramLatency } from "../components/HistogramLatency";
 import { DataGrid } from "../components/DataGrid";
 import { Dropzone } from "../components/Dropzone";
 import { FullResponseModal } from "../components/FullResponseModal";
+import { EmptyState } from "../components/EmptyState";
 
 function parseStrict(json: any): LlmResponseRecord[] {
   if (typeof json !== "object" || json === null || !Array.isArray(json.responses)) {
@@ -143,12 +144,20 @@ export default function Page() {
             sloMs={state.sloMs}
           />
         )}
-        <DataGrid
-          rows={state.records}
-          locale={state.locale}
-          timeZone={state.timeZone}
-          onOpen={(record) => dispatch({ type: "modal/open", payload: record })}
-        />
+
+        {state.records.length === 0 ? (
+          <EmptyState
+            title="No data loaded yet"
+            subtitle="Upload a JSON file to begin."
+          />
+        ) : (
+          <DataGrid
+            rows={state.records}
+            locale={state.locale}
+            timeZone={state.timeZone}
+            onOpen={(record) => dispatch({ type: "modal/open", payload: record })}
+          />
+        )}
 
         <FullResponseModal
           record={state.selectedRecord}

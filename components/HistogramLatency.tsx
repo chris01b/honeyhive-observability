@@ -13,6 +13,7 @@ import {
   Label
 } from "recharts";
 import { HistBin } from "../store/uiTypes";
+import { EmptyState } from "./EmptyState";
 
 type Props = {
   bins: HistBin[];
@@ -33,7 +34,11 @@ export const HistogramLatency: React.FC<Props> = ({
   if (!bins.length) {
     return (
       <div>
-        No data to visualize.
+        <h3>Latency Distribution</h3>
+        <EmptyState 
+          title="No data to visualize" 
+          subtitle="Upload data to see the latency distribution chart."
+        />
       </div>
     );
   }

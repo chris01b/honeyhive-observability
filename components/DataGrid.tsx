@@ -16,15 +16,6 @@ export const DataGrid: React.FC<Props> = ({
   timeZone,
   onOpen
 }) => {
-  if (rows.length === 0) {
-    return (
-      <div>
-        <h2>Responses (0)</h2>
-        <p>No data loaded. Upload a JSON file to get started.</p>
-      </div>
-    );
-  }
-
   return (
     <div>
       <h2>Responses ({rows.length})</h2>
