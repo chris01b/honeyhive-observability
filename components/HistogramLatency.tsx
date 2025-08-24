@@ -83,15 +83,18 @@ export const HistogramLatency: React.FC<Props> = ({
         <BarChart 
           data={data} 
           margin={{ top: 24, right: 10, bottom: 24, left: 10 }}
-          onClick={(e: any) => {
+          onClick={(e: unknown) => {
             if (!onSelectRange) return;
 
-            if (e?.activeIndex != null && data) {
-              const index = parseInt(e.activeIndex);
+            const event = e as { activeIndex?: string | number; event?: MouseEvent };
+            if (event?.activeIndex != null && data) {
+              const index = typeof event.activeIndex === 'string' 
+                ? parseInt(event.activeIndex) 
+                : event.activeIndex;
               if (!isNaN(index) && data[index]) {
                 const payload = data[index];
                 const range = { min: payload.startMs as number, max: payload.endMs as number };
-                const additive = !!(e?.event?.shiftKey);
+                const additive = !!(event?.event?.shiftKey);
                 onSelectRange(range, additive);
               }
             }
@@ -113,12 +116,13 @@ export const HistogramLatency: React.FC<Props> = ({
             label={{ value: "Completions", angle: -90, position: "insideLeft" }}
           />
           <Tooltip
-            formatter={(value: any, name: any, props: any) => {
+            formatter={(value: unknown, name: unknown, props: unknown) => {
               if (name === "count") {
-                const pct = (props?.payload?.pct ?? 0).toFixed(1);
-                return [`${value} • ${pct}%`, "Completions"];
+                const payload = (props as { payload?: { pct?: number } })?.payload;
+                const pct = (payload?.pct ?? 0).toFixed(1);
+                return [`${value} • ${pct}%`, "Completions"] as [string, string];
               }
-              return [value, name];
+              return [String(value), String(name)] as [string, string];
             }}
           />
           <Bar 

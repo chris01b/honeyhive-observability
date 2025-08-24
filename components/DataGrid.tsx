@@ -17,7 +17,7 @@ const header = (
   label: string,
   key: NonNullable<SortState>["key"],
   sort: SortState,
-  onSort: (k: any) => void,
+  onSort: (k: NonNullable<SortState>["key"]) => void,
   className: string = ""
 ) => {
   const dir = sort && sort.key === key ? (sort.dir === "asc" ? "▲" : "▼") : "";
