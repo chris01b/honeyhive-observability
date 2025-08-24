@@ -134,6 +134,13 @@ export default function Page() {
         />
       )}
 
+      {state.isParsing && (
+        <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 rounded-lg p-3 text-sm">
+          <span className="h-3.5 w-3.5 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin" aria-hidden />
+          <span>Parsing file…</span>
+        </div>
+      )}
+
       <div className="border border-slate-200 rounded-lg p-4 bg-white">
         <Dropzone onFile={handleFile} />
       </div>
@@ -162,7 +169,7 @@ export default function Page() {
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-slate-600">SLO (ms)</span>
-            <input
+          <input
               type="number"
               min={1}
               step={10}
@@ -210,7 +217,7 @@ export default function Page() {
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-slate-600">Bin width (ms)</span>
-            <input
+          <input
             type="number"
             min={1}
               placeholder="auto"
@@ -235,7 +242,14 @@ export default function Page() {
               }}
             />
           </label>
-      </div>
+
+          {state.isComputing && state.records.length > 0 && (
+            <span className="inline-flex items-center gap-2 text-slate-500 text-sm ml-auto">
+              <span className="h-3.5 w-3.5 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin" aria-hidden />
+              Updating…
+            </span>
+          )}
+        </div>
 
         {state.filters.latencyRanges?.length ? (
           <div className="mt-3 flex items-center gap-2 flex-wrap">
