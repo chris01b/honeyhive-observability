@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
 type LlmResponse = {
   id: string;
@@ -47,6 +47,11 @@ export default function Page() {
       ? Intl.DateTimeFormat().resolvedOptions().timeZone
       : "UTC";
 
+  const latencies = useMemo(
+    () => data.map(r => Number(r.responseTimeMs)).filter((n) => Number.isFinite(n)),
+    [data]
+  );
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -83,6 +88,9 @@ export default function Page() {
 
       <div>
         <h2>Responses ({data.length})</h2>
+        {latencies.length > 0 && (
+          <p>Latency data points: {latencies.length}</p>
+        )}
         {data.length > 0 ? (
           <table className="w-full">
             <thead>
