@@ -22,8 +22,10 @@ export const Dropzone: React.FC<Props> = ({ onFiles }) => {
   return (
     <div
       className={[
-        "cursor-pointer rounded-lg border-2 border-dashed border-slate-200 bg-white p-8 text-center",
-        active ? "bg-slate-50" : ""
+        "cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors",
+        active 
+          ? "border-blue-300 bg-blue-50 text-blue-700" 
+          : "border-slate-200 bg-white text-slate-900"
       ].join(" ")}
       onDragOver={(e) => {
         e.preventDefault();
