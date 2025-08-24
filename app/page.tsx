@@ -1,6 +1,10 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import {
+  ResponsiveContainer, BarChart, Bar,
+  CartesianGrid, XAxis, YAxis, Tooltip
+} from "recharts";
 
 type LlmResponse = {
   id: string;
@@ -100,6 +104,11 @@ export default function Page() {
     [latencies]
   );
 
+  const chartData = useMemo(
+    () => bins.map(b => ({ ...b, label: `${Math.round(b.startMs)}–${Math.round(b.endMs)} ms` })),
+    [bins]
+  );
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -140,6 +149,21 @@ export default function Page() {
           <div>
             <p>Latency data points: {latencies.length}</p>
             <p>p50: {p50 != null ? `${Math.round(p50)} ms` : "—"} | p95: {p95 != null ? `${Math.round(p95)} ms` : "—"} | p99: {p99 != null ? `${Math.round(p99)} ms` : "—"}</p>
+          </div>
+        )}
+        
+        {chartData.length > 0 && (
+          <div>
+            <h3>Latency Distribution</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="label" angle={-20} textAnchor="end" height={50} />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="count" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         )}
         {data.length > 0 ? (
