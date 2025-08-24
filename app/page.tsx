@@ -115,6 +115,7 @@ function parseData(json: any): LlmResponseRecord[] {
 export default function Page() {
   const [records, setRecords] = useState<LlmResponseRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [sloMs, setSloMs] = useState<number>(800);
 
   const locale = typeof navigator !== "undefined" ? navigator.language : "en-US";
   const timeZone =
@@ -163,6 +164,18 @@ export default function Page() {
           accept=".json" 
           onChange={handleFileUpload}
         />
+        
+        <div>
+          <label htmlFor="slo">SLO (ms):</label>
+          <input
+            id="slo"
+            type="number"
+            min={1}
+            step={10}
+            value={sloMs}
+            onChange={(e) => setSloMs(Math.max(1, Number(e.target.value) || 1))}
+          />
+        </div>
       </div>
 
       {error && (
@@ -177,6 +190,7 @@ export default function Page() {
           <div>
             <p>Latency data points: {latencies.length}</p>
             <p>p50: {p50 != null ? `${Math.round(p50)} ms` : "—"} | p95: {p95 != null ? `${Math.round(p95)} ms` : "—"} | p99: {p99 != null ? `${Math.round(p99)} ms` : "—"}</p>
+            <p>SLO violations: {latencies.filter(lat => lat > sloMs).length} / {latencies.length} ({((latencies.filter(lat => lat > sloMs).length / latencies.length) * 100).toFixed(1)}%)</p>
           </div>
         )}
         
