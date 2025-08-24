@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useReducer } from "react";
 import {
   ResponsiveContainer, BarChart, Bar,
   CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine, Label
 } from "recharts";
 import { LlmResponseRecord } from "../types/llm";
 import { fmtNumber, fmtTime } from "../utils/formatters";
-
-type HistBin = { startMs: number; endMs: number; count: number; pct: number };
+import { HistBin, UiState } from "../store/uiTypes";
+import { reducer } from "../store/reducer";
 
 function quantile(values: number[], q: number) {
   if (!values.length) return undefined;
@@ -86,20 +86,22 @@ function parseStrict(json: any): LlmResponseRecord[] {
   });
 }
 
-export default function Page() {
-  const [records, setRecords] = useState<LlmResponseRecord[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [sloMs, setSloMs] = useState<number>(800);
+const initialState: UiState = {
+  records: [],
+  error: null,
+  sloMs: 800,
+  locale: typeof navigator !== "undefined" ? navigator.language : "en-US",
+  timeZone: typeof Intl !== "undefined"
+    ? Intl.DateTimeFormat().resolvedOptions().timeZone
+    : "UTC"
+};
 
-  const locale = typeof navigator !== "undefined" ? navigator.language : "en-US";
-  const timeZone =
-    typeof Intl !== "undefined"
-      ? Intl.DateTimeFormat().resolvedOptions().timeZone
-      : "UTC";
+export default function Page() {
+  const [state, dispatch] = useReducer(reducer, initialState);
 
   const latencies = useMemo(
-    () => records.map(r => Number(r.response_time_ms)).filter((n) => Number.isFinite(n)),
-    [records]
+    () => state.records.map(r => Number(r.response_time_ms)).filter((n) => Number.isFinite(n)),
+    [state.records]
   );
 
   const { bins, p50, p95, p99 } = useMemo(
@@ -120,17 +122,17 @@ export default function Page() {
   const labelP50 = findLabel(p50);
   const labelP95 = findLabel(p95);
   const labelP99 = findLabel(p99);
-  const labelSLO = findLabel(sloMs);
+  const labelSLO = findLabel(state.sloMs);
 
   async function handleFile(file: File) {
-    setError(null);
+    dispatch({ type: "set/error", payload: null });
     try {
       const text = await file.text();
       const json = JSON.parse(text);
-      setRecords(parseStrict(json));
+      dispatch({ type: "load/records", payload: parseStrict(json) });
     } catch (e: any) {
-      setRecords([]);
-      setError(`${file.name ? `in ${file.name}: ` : ""}${e?.message ?? "Failed to parse JSON."}`);
+      dispatch({ type: "load/records", payload: [] });
+      dispatch({ type: "set/error", payload: `${file.name ? `in ${file.name}: ` : ""}${e?.message ?? "Failed to parse JSON."}` });
     }
   }
 
@@ -152,25 +154,25 @@ export default function Page() {
             type="number"
             min={1}
             step={10}
-            value={sloMs}
-            onChange={(e) => setSloMs(Math.max(1, Number(e.target.value) || 1))}
+            value={state.sloMs}
+            onChange={(e) => dispatch({ type: "set/sloMs", payload: Math.max(1, Number(e.target.value) || 1) })}
           />
         </div>
       </div>
 
-      {error && (
+      {state.error && (
         <div>
-          {error}
+          {state.error}
         </div>
       )}
 
       <div>
-        <h2>Responses ({records.length})</h2>
+        <h2>Responses ({state.records.length})</h2>
         {latencies.length > 0 && (
           <div>
             <p>Latency data points: {latencies.length}</p>
             <p>p50: {p50 != null ? `${Math.round(p50)} ms` : "—"} | p95: {p95 != null ? `${Math.round(p95)} ms` : "—"} | p99: {p99 != null ? `${Math.round(p99)} ms` : "—"}</p>
-            <p>SLO violations: {latencies.filter(lat => lat > sloMs).length} / {latencies.length} ({((latencies.filter(lat => lat > sloMs).length / latencies.length) * 100).toFixed(1)}%)</p>
+            <p>SLO violations: {latencies.filter(lat => lat > state.sloMs).length} / {latencies.length} ({((latencies.filter(lat => lat > state.sloMs).length / latencies.length) * 100).toFixed(1)}%)</p>
           </div>
         )}
         
@@ -228,7 +230,7 @@ export default function Page() {
             </ResponsiveContainer>
           </div>
         )}
-        {records.length > 0 ? (
+        {state.records.length > 0 ? (
           <table className="w-full">
             <thead>
               <tr className="">
@@ -240,10 +242,10 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {records.map((r, i) => (
+              {state.records.map((r, i) => (
                 <tr key={r.id ?? i} className="border-b">
                   <td>{r.id ?? "—"}</td>
-                  <td>{fmtTime(r.timestamp, locale, timeZone)}</td>
+                  <td>{fmtTime(r.timestamp, state.locale, state.timeZone)}</td>
                   <td>{r.model ?? "—"}</td>
                   <td>{r.status ?? "—"}</td>
                   <td>{fmtNumber(r.response_time_ms)}</td>
