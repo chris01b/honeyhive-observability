@@ -2,7 +2,7 @@
 
 import React, { useMemo, useReducer } from "react";
 import { LlmResponseRecord } from "../types/llm";
-import { HistBin, UiState } from "../store/uiTypes";
+import { UiState } from "../store/uiTypes";
 import { reducer } from "../store/reducer";
 import { useComputeWorker } from "../hooks/useComputeWorker";
 import { HistogramLatency } from "../components/HistogramLatency";
@@ -47,16 +47,32 @@ function parseStrict(json: any): LlmResponseRecord[] {
   });
 }
 
+const defaultLocale =
+  typeof navigator !== "undefined" ? navigator.language : "en-US";
+const defaultZone =
+  typeof Intl !== "undefined"
+    ? Intl.DateTimeFormat().resolvedOptions().timeZone
+    : "UTC";
+
 const initialState: UiState = {
   records: [],
-  error: null,
-  sloMs: 800,
-  locale: typeof navigator !== "undefined" ? navigator.language : "en-US",
-  timeZone: typeof Intl !== "undefined"
-    ? Intl.DateTimeFormat().resolvedOptions().timeZone
-    : "UTC",
-  workerResults: undefined,
-  workerError: undefined,
+  filters: {},
+  sort: null,
+  highlightedIds: new Set(),
+  settings: {
+    locale: defaultLocale,
+    timeZone: defaultZone,
+    sloMs: 800,
+    desiredBins: 40,
+    binWidthMs: undefined
+  },
+  visibleIndices: [],
+  histBins: [],
+  stats: { n: 0, errPct: 0 },
+  lastComputeMs: 0,
+  error: undefined,
+  isComputing: false,
+  isParsing: false,
   selectedRecord: null
 };
 
@@ -70,29 +86,26 @@ export default function Page() {
     [state.records]
   );
 
-  const { bins, p50, p95, p99 } = useMemo(() => {
-    if (state.workerResults) {
-      return {
-        bins: state.workerResults.histBins,
-        p50: state.workerResults.stats.p50,
-        p95: state.workerResults.stats.p95,
-        p99: state.workerResults.stats.p99
-      };
-    }
-    return { bins: [], p50: undefined, p95: undefined, p99: undefined };
-  }, [state.workerResults]);
+  // Use state directly now that worker updates it
+  const { histBins: bins, stats } = state;
+  const { p50, p95, p99 } = stats;
 
 
 
   async function handleFile(file: File) {
-    dispatch({ type: "set/error", payload: null });
+    dispatch({ type: "ui/parsing", payload: true });
     try {
       const text = await file.text();
       const json = JSON.parse(text);
       dispatch({ type: "load/records", payload: parseStrict(json) });
     } catch (e: any) {
       dispatch({ type: "load/records", payload: [] });
-      dispatch({ type: "set/error", payload: `${file.name ? `in ${file.name}: ` : ""}${e?.message ?? "Failed to parse JSON."}` });
+      dispatch({
+        type: "ui/setError",
+        payload: { msg: `${file.name ? `in ${file.name}: ` : ""}${e?.message ?? "Failed to parse JSON."}` }
+      });
+    } finally {
+      dispatch({ type: "ui/parsing", payload: false });
     }
   }
 
@@ -110,23 +123,19 @@ export default function Page() {
             type="number"
             min={1}
             step={10}
-            value={state.sloMs}
-            onChange={(e) => dispatch({ type: "set/sloMs", payload: Math.max(1, Number(e.target.value) || 1) })}
+            value={state.settings.sloMs}
+            onChange={(e) => dispatch({ 
+              type: "settings/set", 
+              payload: { sloMs: Math.max(1, Number(e.target.value) || 1) }
+            })}
           />
         </div>
       </div>
 
       {state.error && (
         <ErrorBanner
-          message={state.error}
-          onClear={() => dispatch({ type: "set/error", payload: null })}
-        />
-      )}
-
-      {state.workerError && (
-        <ErrorBanner
-          message={`Worker Error: ${state.workerError}`}
-          onClear={() => dispatch({ type: "worker/error", payload: null })}
+          message={state.error.msg}
+          onClear={() => dispatch({ type: "ui/clearError" })}
         />
       )}
 
@@ -136,15 +145,15 @@ export default function Page() {
           <div>
             <p>Latency data points: {latencies.length}</p>
             <p>p50: {p50 != null ? `${Math.round(p50)} ms` : "—"} | p95: {p95 != null ? `${Math.round(p95)} ms` : "—"} | p99: {p99 != null ? `${Math.round(p99)} ms` : "—"}</p>
-            <p>SLO violations: {latencies.filter(lat => lat > state.sloMs).length} / {latencies.length} ({((latencies.filter(lat => lat > state.sloMs).length / latencies.length) * 100).toFixed(1)}%)</p>
+            <p>SLO violations: {latencies.filter(lat => lat > state.settings.sloMs).length} / {latencies.length} ({((latencies.filter(lat => lat > state.settings.sloMs).length / latencies.length) * 100).toFixed(1)}%)</p>
           </div>
         )}
         
-        {bins.length > 0 && state.workerResults && (
+        {bins.length > 0 && (
           <HistogramLatency
             bins={bins}
-            stats={state.workerResults.stats}
-            sloMs={state.sloMs}
+            stats={stats}
+            sloMs={state.settings.sloMs}
           />
         )}
 
@@ -156,8 +165,8 @@ export default function Page() {
         ) : (
           <DataGrid
             rows={state.records}
-            locale={state.locale}
-            timeZone={state.timeZone}
+            locale={state.settings.locale}
+            timeZone={state.settings.timeZone}
             onOpen={(record) => dispatch({ type: "modal/open", payload: record })}
           />
         )}
@@ -165,8 +174,8 @@ export default function Page() {
         <FullResponseModal
           record={state.selectedRecord}
           onClose={() => dispatch({ type: "modal/close" })}
-          locale={state.locale}
-          timeZone={state.timeZone}
+          locale={state.settings.locale}
+          timeZone={state.settings.timeZone}
         />
       </div>
     </div>

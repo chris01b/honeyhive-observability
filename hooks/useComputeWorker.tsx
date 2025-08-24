@@ -38,6 +38,14 @@ export function useComputeWorker(state: UiState, dispatch: React.Dispatch<any>) 
   }, [state.records]);
 
   useEffect(() => {
-    post({ type: "setSettings", payload: { sloMs: state.sloMs } });
-  }, [state.sloMs]);
+    post({ type: "setFilters", payload: state.filters });
+  }, [state.filters]);
+
+  useEffect(() => {
+    post({ type: "setSort", payload: state.sort });
+  }, [state.sort]);
+
+  useEffect(() => {
+    post({ type: "setSettings", payload: state.settings });
+  }, [state.settings]);
 }

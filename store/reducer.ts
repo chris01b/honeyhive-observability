@@ -6,26 +6,54 @@ export function reducer(state: UiState, action: any): UiState {
       return {
         ...state,
         records: action.payload,
-        error: null
+        filters: { ...state.filters, latencyRanges: [] },
+        sort: null,
+        highlightedIds: new Set(),
+        visibleIndices: [],
+        histBins: [],
+        stats: { n: 0, errPct: 0 },
+        lastComputeMs: 0
       };
 
-    case "set/error":
-      return { ...state, error: action.payload };
+    case "filters/patch":
+      return { ...state, filters: { ...state.filters, ...action.payload } };
 
-    case "set/sloMs":
-      return { ...state, sloMs: action.payload };
+    case "sort/set":
+      return { ...state, sort: action.payload };
+
+    case "highlight/toggle": {
+      const next = new Set(state.highlightedIds);
+      const id = action.payload as string;
+      next.has(id) ? next.delete(id) : next.add(id);
+      return { ...state, highlightedIds: next };
+    }
+
+    case "settings/set":
+      return { ...state, settings: { ...state.settings, ...action.payload } };
 
     case "worker/results":
-      return { 
-        ...state, 
-        workerResults: action.payload 
+      return {
+        ...state,
+        visibleIndices: action.payload.visibleIndices,
+        histBins: action.payload.histBins,
+        stats: action.payload.stats,
+        lastComputeMs: action.payload.lastComputeMs
       };
 
     case "worker/error":
-      return { 
-        ...state, 
-        workerError: action.payload?.message || action.payload || "Worker error" 
-      };
+      return { ...state, error: { msg: action.payload.message } };
+
+    case "ui/computing":
+      return { ...state, isComputing: !!action.payload };
+
+    case "ui/parsing":
+      return { ...state, isParsing: !!action.payload };
+
+    case "ui/setError":
+      return { ...state, error: action.payload };
+
+    case "ui/clearError":
+      return { ...state, error: undefined };
 
     case "modal/open":
       return { 
