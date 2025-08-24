@@ -24,13 +24,20 @@ type Props = {
     p99?: number;
   };
   sloMs: number;
+  onSelectRange?: (range: { min: number; max: number }, additive: boolean) => void;
 };
 
 export const HistogramLatency: React.FC<Props> = ({
   bins,
   stats,
-  sloMs
+  sloMs,
+  onSelectRange
 }) => {
+  const data = useMemo(
+    () => bins.map(b => ({ ...b, label: `${Math.round(b.startMs)}–${Math.round(b.endMs)} ms` })),
+    [bins]
+  );
+
   if (!bins.length) {
     return (
       <div>
@@ -42,11 +49,6 @@ export const HistogramLatency: React.FC<Props> = ({
       </div>
     );
   }
-
-  const data = useMemo(
-    () => bins.map(b => ({ ...b, label: `${Math.round(b.startMs)}–${Math.round(b.endMs)} ms` })),
-    [bins]
-  );
 
   const findLabel = (value?: number) => {
     if (value == null || !bins.length) return undefined;
@@ -63,7 +65,23 @@ export const HistogramLatency: React.FC<Props> = ({
     <div>
       <h3>Latency Distribution</h3>
       <ResponsiveContainer width="100%" height={320}>
-        <BarChart data={data} margin={{ top: 24, right: 10, bottom: 24, left: 10 }}>
+        <BarChart 
+          data={data} 
+          margin={{ top: 24, right: 10, bottom: 24, left: 10 }}
+          onClick={(e: any) => {
+            if (!onSelectRange) return;
+
+            if (e?.activeIndex != null && data) {
+              const index = parseInt(e.activeIndex);
+              if (!isNaN(index) && data[index]) {
+                const payload = data[index];
+                const range = { min: payload.startMs as number, max: payload.endMs as number };
+                const additive = !!(e?.event?.shiftKey);
+                onSelectRange(range, additive);
+              }
+            }
+          }}
+        >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="label"
@@ -88,7 +106,13 @@ export const HistogramLatency: React.FC<Props> = ({
               return [value, name];
             }}
           />
-          <Bar dataKey="count" />
+          <Bar 
+            dataKey="count" 
+            fill="#3B82F6" 
+            stroke="#1E40AF" 
+            strokeWidth={1}
+            cursor="pointer"
+          />
           {labelP50 && (
             <ReferenceLine x={labelP50} stroke="#111827" strokeDasharray="3 3">
               <Label value="p50" position="top" />
@@ -111,6 +135,11 @@ export const HistogramLatency: React.FC<Props> = ({
           )}
         </BarChart>
       </ResponsiveContainer>
+      {onSelectRange && (
+        <div className="mt-1 text-xs text-slate-500">
+          Click a bar to filter by latency range. Shift-click to multi-select.
+        </div>
+      )}
     </div>
   );
 };

@@ -69,24 +69,59 @@ const buildHistogram = (lats: number[], desiredBins = 24) => {
 
 const compute = (): void => {
   try {
-    // filtering: for now, just show all records
-    const visibleIndices = records.map((_, i) => i);
+    // Apply filters to determine visible records
+    const visibleIndices: number[] = [];
     
-    const latencies = records
+    for (let i = 0; i < records.length; i++) {
+      const record = records[i];
+      let visible = true;
+      
+      // Model filter
+      if (filters.models?.length && record.model) {
+        visible = visible && filters.models.includes(record.model);
+      }
+      
+      // Latency range filters
+      if (filters.latencyRanges?.length && record.response_time_ms != null) {
+        const latency = Number(record.response_time_ms);
+        if (Number.isFinite(latency)) {
+          visible = visible && filters.latencyRanges.some(range => 
+            latency >= range.min && latency < range.max
+          );
+        }
+      }
+      
+      // Status filter
+      if (filters.status?.length && record.status) {
+        visible = visible && filters.status.includes(record.status as any);
+      }
+      
+      if (visible) {
+        visibleIndices.push(i);
+      }
+    }
+    
+    // Calculate latencies for all records (for total stats)
+    const allLatencies = records
       .map(r => Number(r.response_time_ms))
       .filter((n) => Number.isFinite(n));
 
-    const { bins, p50, p95, p99 } = buildHistogram(latencies, settings.desiredBins);
+    // Calculate latencies for visible records (for histogram)
+    const visibleLatencies = visibleIndices
+      .map(i => Number(records[i].response_time_ms))
+      .filter((n) => Number.isFinite(n));
+
+    const { bins, p50, p95, p99 } = buildHistogram(visibleLatencies, settings.desiredBins);
     
-    // Calculate additional stats
+    // Calculate additional stats (visible records for histogram-related stats)
     const errorCount = records.filter(r => r.status === "error").length;
     const errPct = records.length > 0 ? (errorCount / records.length) * 100 : 0;
     
     const totalCost = records.reduce((sum, r) => sum + (r.cost_usd || 0), 0);
-    const avgCostPer1k = totalCost > 0 && latencies.length > 0 ? (totalCost / latencies.length) * 1000 : undefined;
+    const avgCostPer1k = totalCost > 0 && allLatencies.length > 0 ? (totalCost / allLatencies.length) * 1000 : undefined;
     
-    const sloViolations = latencies.filter(lat => lat > settings.sloMs).length;
-    const overSloPct = latencies.length > 0 ? (sloViolations / latencies.length) * 100 : 0;
+    const sloViolations = allLatencies.filter(lat => lat > settings.sloMs).length;
+    const overSloPct = allLatencies.length > 0 ? (sloViolations / allLatencies.length) * 100 : 0;
 
     const result: WorkerOut = {
       type: "results",
@@ -94,7 +129,7 @@ const compute = (): void => {
         visibleIndices,
         histBins: bins,
         stats: {
-          n: latencies.length,
+          n: visibleLatencies.length,
           errPct,
           p50,
           p95,
