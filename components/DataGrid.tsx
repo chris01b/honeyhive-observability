@@ -76,7 +76,7 @@ export const DataGrid: React.FC<Props> = ({
                 <td className="border-t border-slate-200 px-1 py-2">
                   <div className="text-xs truncate">{r.output ?? "—"}</div>
                   {r.output && (
-                    <button className="mt-1 text-xs text-blue-600 hover:underline" onClick={() => onOpen(r)}>
+                    <button className="mt-1 text-xs text-blue-600 hover:underline cursor-pointer" onClick={() => onOpen(r)}>
                       View Full
                     </button>
                   )}
