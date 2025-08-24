@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useReducer, useState } from "react";
+import React, { useEffect, useMemo, useReducer, useState } from "react";
 import { LlmResponseRecord } from "../types/llm";
 import { UiState } from "../store/uiTypes";
 import { reducer } from "../store/reducer";
@@ -96,9 +96,23 @@ export default function Page() {
 
   const selectedModel = state.filters.models?.[0] ?? "All";
 
-  // Local input states for bin controls
-  const [binsInput, setBinsInput] = useState(String(state.settings.desiredBins));
-  const [binWidthInput, setBinWidthInput] = useState(state.settings.binWidthMs ? String(state.settings.binWidthMs) : "");
+  // Local input states for controls
+  const [sloInput, setSloInput] = useState(String(initialState.settings.sloMs));
+  const [binsInput, setBinsInput] = useState(String(initialState.settings.desiredBins));
+  const [binWidthInput, setBinWidthInput] = useState("");
+
+  // Sync input values with state when state changes externally
+  useEffect(() => {
+    setSloInput(String(state.settings.sloMs));
+  }, [state.settings.sloMs]);
+
+  useEffect(() => {
+    setBinsInput(String(state.settings.desiredBins));
+  }, [state.settings.desiredBins]);
+
+  useEffect(() => {
+    setBinWidthInput(state.settings.binWidthMs ? String(state.settings.binWidthMs) : "");
+  }, [state.settings.binWidthMs]);
 
   // Get filtered rows based on visibleIndices from worker
   const visibleRows = useMemo(
@@ -169,18 +183,33 @@ export default function Page() {
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-slate-600">SLO (ms)</span>
-          <input
+            <input
               type="number"
               min={1}
               step={10}
               className="min-w-[120px] rounded-md border border-slate-300 px-2 py-1"
-              value={state.settings.sloMs}
-              onChange={(e) => dispatch({ 
-                type: "settings/set", 
-                payload: { sloMs: Math.max(1, Number(e.target.value) || 1) }
-              })}
-          />
-        </label>
+              value={sloInput}
+              onChange={(e) => {
+                setSloInput(e.target.value);
+                const num = Number(e.target.value);
+                if (num > 0) {
+                  dispatch({
+                    type: "settings/set",
+                    payload: { sloMs: num }
+                  });
+                }
+              }}
+              onBlur={() => {
+                if (!sloInput || Number(sloInput) <= 0) {
+                  setSloInput("800");
+                  dispatch({
+                    type: "settings/set",
+                    payload: { sloMs: 800 }
+                  });
+                }
+              }}
+            />
+          </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-slate-600">Desired bins</span>
@@ -217,9 +246,9 @@ export default function Page() {
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-slate-600">Bin width (ms)</span>
-          <input
-            type="number"
-            min={1}
+            <input
+              type="number"
+              min={1}
               placeholder="auto"
               className="min-w-[120px] rounded-md border border-slate-300 px-2 py-1"
               value={binWidthInput}
