@@ -1,33 +1,20 @@
 "use client";
 import React, { useCallback, useRef, useState } from "react";
 
-type Props = { 
-  onFile: (file: File) => void;
-};
+type Props = { onFiles: (files: FileList) => void };
 
-export const Dropzone: React.FC<Props> = ({ onFile }) => {
+export const Dropzone: React.FC<Props> = ({ onFiles }) => {
   const [active, setActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleFiles = useCallback(
-    (files: FileList) => {
-      if (files.length > 0) {
-        onFile(files[0]); // Take the first file
-      }
-    },
-    [onFile]
-  );
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setActive(false);
-      if (e.dataTransfer?.files?.length) {
-        handleFiles(e.dataTransfer.files);
-      }
+      if (e.dataTransfer?.files?.length) onFiles(e.dataTransfer.files);
     },
-    [handleFiles]
+    [onFiles]
   );
 
   const onBrowse = useCallback(() => inputRef.current?.click(), []);
@@ -35,7 +22,8 @@ export const Dropzone: React.FC<Props> = ({ onFile }) => {
   return (
     <div
       className={[
-        "cursor-pointer text-center", active ? "bg-slate-50" : ""
+        "cursor-pointer rounded-lg border-2 border-dashed border-slate-200 bg-white p-8 text-center",
+        active ? "bg-slate-50" : ""
       ].join(" ")}
       onDragOver={(e) => {
         e.preventDefault();
@@ -55,7 +43,7 @@ export const Dropzone: React.FC<Props> = ({ onFile }) => {
         type="file"
         accept=".json,application/json"
         className="hidden"
-        onChange={(e) => e.target.files && handleFiles(e.target.files)}
+        onChange={(e) => e.target.files && onFiles(e.target.files)}
       />
     </div>
   );
