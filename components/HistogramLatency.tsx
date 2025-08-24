@@ -96,7 +96,7 @@ export const HistogramLatency: React.FC<Props> = ({
           onClick={(e: unknown) => {
             if (!onSelectRange) return;
 
-            const event = e as { activeIndex?: string | number; event?: MouseEvent };
+            const event = e as { activeIndex?: string | number };
             if (event?.activeIndex != null && data) {
               const index = typeof event.activeIndex === "string" 
                 ? parseInt(event.activeIndex) 
@@ -104,8 +104,7 @@ export const HistogramLatency: React.FC<Props> = ({
               if (!isNaN(index) && data[index]) {
                 const payload = data[index];
                 const range = { min: payload.startMs as number, max: payload.endMs as number };
-                const additive = !!(event?.event?.shiftKey);
-                onSelectRange(range, additive);
+                onSelectRange(range, false);
               }
             }
           }}
@@ -160,7 +159,7 @@ export const HistogramLatency: React.FC<Props> = ({
       </ResponsiveContainer>
       
       <div className="mt-1 text-xs text-slate-500">
-        Click a bar to filter by latency range. Shift-click to multi-select.
+        Click a bar to filter by latency range.
       </div>
     </div>
   );
