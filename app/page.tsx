@@ -5,20 +5,7 @@ import {
   ResponsiveContainer, BarChart, Bar,
   CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine, Label
 } from "recharts";
-
-type LlmResponseRecord = {
-  id?: string;
-  timestamp?: string;
-  responseTimeMs?: number;
-  model?: string;
-  status?: string;
-  promptTokens?: number;
-  completionTokens?: number;
-  totalTokens?: number;
-  costUsd?: number;
-  qualityScore?: number;
-  responseText?: string;
-};
+import { LlmResponseRecord } from "../types/llm";
 
 type HistBin = { startMs: number; endMs: number; count: number; pct: number };
 
@@ -85,29 +72,29 @@ function parseStrict(json: any): LlmResponseRecord[] {
     typeof v === "number" && Number.isFinite(v) ? v : undefined;
 
   return json.responses.map((r: any) => {
-    const prompt = toNum(r.prompt_tokens);
-    const completion = toNum(r.completion_tokens);
-    const totalTokensExplicit = toNum(r.total_tokens);
-    const totalTokens =
-      totalTokensExplicit ??
-      (prompt != null || completion != null
-        ? (prompt ?? 0) + (completion ?? 0)
-        : undefined);
-
-    const quality = toNum(r?.evaluation_metrics?.response_quality);
-
+    // Return the record in snake_case format to match the interface
     return {
       id: typeof r.id === "string" ? r.id : undefined,
       timestamp: typeof r.timestamp === "string" ? r.timestamp : undefined,
-      responseTimeMs: toNum(r.response_time_ms),
+      response_time_ms: toNum(r.response_time_ms),
       model: typeof r.model === "string" ? r.model : undefined,
       status: typeof r.status === "string" ? r.status : undefined,
-      promptTokens: prompt,
-      completionTokens: completion,
-      totalTokens,
-      costUsd: toNum(r.cost_usd),
-      qualityScore: quality,
-      responseText: typeof r.output === "string" ? r.output : undefined
+      prompt_tokens: toNum(r.prompt_tokens),
+      completion_tokens: toNum(r.completion_tokens),
+      total_tokens: toNum(r.total_tokens) ?? 
+        (((toNum(r.prompt_tokens) ?? 0) + (toNum(r.completion_tokens) ?? 0)) || undefined),
+      cost_usd: toNum(r.cost_usd),
+      temperature: toNum(r.temperature),
+      max_tokens: toNum(r.max_tokens),
+      prompt_template: typeof r.prompt_template === "string" ? r.prompt_template : undefined,
+      output: typeof r.output === "string" ? r.output : undefined,
+      evaluation_metrics: r.evaluation_metrics ? {
+        relevance_score: toNum(r.evaluation_metrics.relevance_score),
+        factual_accuracy: toNum(r.evaluation_metrics.factual_accuracy),
+        coherence_score: toNum(r.evaluation_metrics.coherence_score),
+        response_quality: toNum(r.evaluation_metrics.response_quality)
+      } : undefined,
+      error: r.error || undefined
     };
   });
 }
@@ -124,7 +111,7 @@ export default function Page() {
       : "UTC";
 
   const latencies = useMemo(
-    () => records.map(r => Number(r.responseTimeMs)).filter((n) => Number.isFinite(n)),
+    () => records.map(r => Number(r.response_time_ms)).filter((n) => Number.isFinite(n)),
     [records]
   );
 
@@ -272,7 +259,7 @@ export default function Page() {
                   <td>{fmtTime(r.timestamp, locale, timeZone)}</td>
                   <td>{r.model ?? "—"}</td>
                   <td>{r.status ?? "—"}</td>
-                  <td>{fmtNumber(r.responseTimeMs)}</td>
+                  <td>{fmtNumber(r.response_time_ms)}</td>
                 </tr>
               ))}
             </tbody>
