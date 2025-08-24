@@ -73,6 +73,54 @@ const buildHistogram = (lats: number[], desiredBins = 24, binWidthMs?: number) =
   return { bins, p50, p95, p99 };
 };
 
+// Push NaN/undefined to end for ascending, to start for descending
+const numForSort = (v: number | undefined, dir: "asc" | "desc") =>
+  (v != null && Number.isFinite(v)) ? v : (dir === "asc" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
+
+const sortIndices = (idxs: number[]): number[] => {
+  if (!sort) return idxs;
+  const { key, dir } = sort;
+  const mult = dir === "asc" ? 1 : -1;
+  return [...idxs].sort((a, b) => {
+    const recordA = records[a];
+    const recordB = records[b];
+    
+    switch (key) {
+      case "timestamp": {
+        const va = recordA.timestamp ? new Date(recordA.timestamp).getTime() : undefined;
+        const vb = recordB.timestamp ? new Date(recordB.timestamp).getTime() : undefined;
+        return mult * (numForSort(va, dir) - numForSort(vb, dir));
+      }
+      case "response_time_ms": {
+        const va = Number(recordA.response_time_ms);
+        const vb = Number(recordB.response_time_ms);
+        return mult * (numForSort(va, dir) - numForSort(vb, dir));
+      }
+      case "total_tokens": {
+        const va = Number(recordA.total_tokens);
+        const vb = Number(recordB.total_tokens);
+        return mult * (numForSort(va, dir) - numForSort(vb, dir));
+      }
+      case "cost_usd": {
+        const va = Number(recordA.cost_usd);
+        const vb = Number(recordB.cost_usd);
+        return mult * (numForSort(va, dir) - numForSort(vb, dir));
+      }
+      case "response_quality": {
+        const va = Number(recordA.evaluation_metrics?.response_quality);
+        const vb = Number(recordB.evaluation_metrics?.response_quality);
+        return mult * (numForSort(va, dir) - numForSort(vb, dir));
+      }
+      case "model":
+        return mult * String(recordA.model || "").localeCompare(String(recordB.model || ""));
+      case "status":
+        return mult * String(recordA.status || "").localeCompare(String(recordB.status || ""));
+      default:
+        return 0;
+    }
+  });
+};
+
 const compute = (): void => {
   try {
     // Apply filters to determine visible records
@@ -107,13 +155,16 @@ const compute = (): void => {
       }
     }
     
+    // Apply sorting to visible indices
+    const sortedIndices = sortIndices(visibleIndices);
+    
     // Calculate latencies for all records (for total stats)
     const allLatencies = records
       .map(r => Number(r.response_time_ms))
       .filter((n) => Number.isFinite(n));
 
     // Calculate latencies for visible records (for histogram)
-    const visibleLatencies = visibleIndices
+    const visibleLatencies = sortedIndices
       .map(i => Number(records[i].response_time_ms))
       .filter((n) => Number.isFinite(n));
 
@@ -132,7 +183,7 @@ const compute = (): void => {
     const result: WorkerOut = {
       type: "results",
       payload: {
-        visibleIndices,
+        visibleIndices: sortedIndices,
         histBins: bins,
         stats: {
           n: visibleLatencies.length,

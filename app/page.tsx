@@ -265,33 +265,28 @@ export default function Page() {
         />
       )}
 
-      <div>
-        <h2>
-          Responses ({visibleRows.length}
-          {state.records.length > visibleRows.length && ` of ${state.records.length}`})
-        </h2>
-        {latencies.length > 0 && (
-          <div>
-            <p>Latency data points: {latencies.length}</p>
-            <p>p50: {p50 != null ? `${Math.round(p50)} ms` : "—"} | p95: {p95 != null ? `${Math.round(p95)} ms` : "—"} | p99: {p99 != null ? `${Math.round(p99)} ms` : "—"}</p>
-            <p>SLO violations: {latencies.filter(lat => lat > state.settings.sloMs).length} / {latencies.length} ({((latencies.filter(lat => lat > state.settings.sloMs).length / latencies.length) * 100).toFixed(1)}%)</p>
-          </div>
-        )}
-        
-        {bins.length > 0 && (
-          <HistogramLatency
-            bins={bins}
-            stats={stats}
-            sloMs={state.settings.sloMs}
-            onSelectRange={(range, additive) => {
-              const current = state.filters.latencyRanges ?? [];
-              const next = additive ? [...current, range] : [range];
-              dispatch({ type: "filters/patch", payload: { latencyRanges: next } });
-            }}
-          />
-        )}
+      {latencies.length > 0 && (
+        <div>
+          <p>Latency data points: {latencies.length}</p>
+          <p>p50: {p50 != null ? `${Math.round(p50)} ms` : "—"} | p95: {p95 != null ? `${Math.round(p95)} ms` : "—"} | p99: {p99 != null ? `${Math.round(p99)} ms` : "—"}</p>
+          <p>SLO violations: {latencies.filter(lat => lat > state.settings.sloMs).length} / {latencies.length} ({((latencies.filter(lat => lat > state.settings.sloMs).length / latencies.length) * 100).toFixed(1)}%)</p>
+        </div>
+      )}
+      
+      {bins.length > 0 && (
+        <HistogramLatency
+          bins={bins}
+          stats={stats}
+          sloMs={state.settings.sloMs}
+          onSelectRange={(range, additive) => {
+            const current = state.filters.latencyRanges ?? [];
+            const next = additive ? [...current, range] : [range];
+            dispatch({ type: "filters/patch", payload: { latencyRanges: next } });
+          }}
+        />
+      )}
 
-        {state.records.length === 0 ? (
+      {state.records.length === 0 ? (
           <EmptyState
             title="No data loaded yet"
             subtitle="Upload a JSON file to begin."
@@ -299,9 +294,11 @@ export default function Page() {
         ) : (
           <DataGrid
             rows={visibleRows}
+            sort={state.sort}
+            onSortChange={(sort) => dispatch({ type: "sort/set", payload: sort })}
+            onOpen={(record) => dispatch({ type: "modal/open", payload: record })}
             locale={state.settings.locale}
             timeZone={state.settings.timeZone}
-            onOpen={(record) => dispatch({ type: "modal/open", payload: record })}
           />
         )}
 
@@ -311,7 +308,6 @@ export default function Page() {
           locale={state.settings.locale}
           timeZone={state.settings.timeZone}
         />
-      </div>
     </div>
   );
 }
