@@ -99,12 +99,21 @@ export const HistogramLatency: React.FC<Props> = ({
         <BarChart 
           data={data} 
           margin={{ top: 25, right: 10, bottom: 24, left: 10 }}
-          onClick={(e: any) => {
-            const payload = e?.activePayload?.[0]?.payload;
-            if (!payload) return;
-            const range = { min: payload.startMs as number, max: payload.endMs as number };
-            const additive = !!(e?.event?.shiftKey);
-            onSelectRange(range, additive);
+          onClick={(e: unknown) => {
+            if (!onSelectRange) return;
+
+            const event = e as { activeIndex?: string | number; event?: MouseEvent };
+            if (event?.activeIndex != null && data) {
+              const index = typeof event.activeIndex === "string" 
+                ? parseInt(event.activeIndex) 
+                : event.activeIndex;
+              if (!isNaN(index) && data[index]) {
+                const payload = data[index];
+                const range = { min: payload.startMs as number, max: payload.endMs as number };
+                const additive = !!(event?.event?.shiftKey);
+                onSelectRange(range, additive);
+              }
+            }
           }}
         >
           <CartesianGrid strokeDasharray="3 3" />
