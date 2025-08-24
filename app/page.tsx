@@ -67,7 +67,7 @@ const initialState: UiState = {
     locale: defaultLocale,
     timeZone: defaultZone,
     sloMs: 2000,
-    desiredBins: 40,
+    desiredBins: 4,
     binWidthMs: undefined
   },
   visibleIndices: [],
@@ -238,10 +238,10 @@ export default function Page() {
               }}
               onBlur={() => {
                 if (!binsInput || Number(binsInput) < 1 || Number(binsInput) > 120) {
-                  setBinsInput("40");
+                  setBinsInput("4");
                   dispatch({
                     type: "settings/set",
-                    payload: { desiredBins: 40, binWidthMs: undefined }
+                    payload: { desiredBins: 4, binWidthMs: undefined }
                   });
                 }
               }}

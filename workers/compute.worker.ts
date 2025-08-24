@@ -10,7 +10,7 @@ let settings: Settings = {
   locale: "en-US",
   timeZone: "UTC", 
   sloMs: 2000,
-  desiredBins: 40,
+  desiredBins: 4,
   binWidthMs: undefined
 };
 
