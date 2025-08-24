@@ -10,6 +10,7 @@ import { DataGrid } from "../components/DataGrid";
 import { Dropzone } from "../components/Dropzone";
 import { FullResponseModal } from "../components/FullResponseModal";
 import { EmptyState } from "../components/EmptyState";
+import { ErrorBanner } from "../components/ErrorBanner";
 
 function parseStrict(json: any): LlmResponseRecord[] {
   if (typeof json !== "object" || json === null || !Array.isArray(json.responses)) {
@@ -116,15 +117,17 @@ export default function Page() {
       </div>
 
       {state.error && (
-        <div>
-          {state.error}
-        </div>
+        <ErrorBanner
+          message={state.error}
+          onClear={() => dispatch({ type: "set/error", payload: null })}
+        />
       )}
 
       {state.workerError && (
-        <div>
-          Worker Error: {state.workerError}
-        </div>
+        <ErrorBanner
+          message={`Worker Error: ${state.workerError}`}
+          onClear={() => dispatch({ type: "worker/error", payload: null })}
+        />
       )}
 
       <div>
