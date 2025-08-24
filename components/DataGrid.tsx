@@ -53,7 +53,7 @@ export const DataGrid: React.FC<Props> = ({
             <tr>
               {header("Timestamp", "timestamp", sort, toggle, "w-32")}
               {header("Model", "model", sort, toggle, "w-20")}
-              {header("Time(ms)", "response_time_ms", sort, toggle, "w-16")}
+              {header("Time(ms)", "response_time_ms", sort, toggle, "w-20")}
               {header("Tokens", "total_tokens", sort, toggle, "w-24")}
               {header("Cost", "cost_usd", sort, toggle, "w-16")}
               {header("Quality", "response_quality", sort, toggle, "w-14")}
