@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import {
   ResponsiveContainer, BarChart, Bar,
-  CartesianGrid, XAxis, YAxis, Tooltip
+  CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine, Label
 } from "recharts";
 
 type LlmResponseRecord = {
@@ -76,7 +76,7 @@ function buildHistogram(lats: number[], desiredBins = 24): {
   return { bins, p50, p95, p99 };
 }
 
-function parseData(json: any): LlmResponseRecord[] {
+function parseStrict(json: any): LlmResponseRecord[] {
   if (typeof json !== "object" || json === null || !Array.isArray(json.responses)) {
     throw new Error("Invalid file: expected an object with a 'responses' array.");
   }
@@ -133,26 +133,32 @@ export default function Page() {
     [latencies]
   );
 
-  const chartData = useMemo(
+  const data = useMemo(
     () => bins.map(b => ({ ...b, label: `${Math.round(b.startMs)}–${Math.round(b.endMs)} ms` })),
     [bins]
   );
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const findLabel = (value?: number) => {
+    if (value == null || !bins.length) return undefined;
+    const bin = bins.find(b => value >= b.startMs && value < b.endMs) ?? bins[bins.length - 1];
+    return `${Math.round(bin.startMs)}–${Math.round(bin.endMs)} ms`;
+  };
+  const labelP50 = findLabel(p50);
+  const labelP95 = findLabel(p95);
+  const labelP99 = findLabel(p99);
+  const labelSLO = findLabel(sloMs);
 
+  async function handleFile(file: File) {
     setError(null);
     try {
       const text = await file.text();
       const json = JSON.parse(text);
-      const parsed = parseData(json);
-      setRecords(parsed);
+      setRecords(parseStrict(json));
     } catch (e: any) {
       setRecords([]);
       setError(`${file.name ? `in ${file.name}: ` : ""}${e?.message ?? "Failed to parse JSON."}`);
     }
-  };
+  }
 
   return (
     <div>
@@ -162,7 +168,7 @@ export default function Page() {
         <input 
           type="file" 
           accept=".json" 
-          onChange={handleFileUpload}
+          onChange={(e) => e.target.files && e.target.files[0] && handleFile(e.target.files[0])}
         />
         
         <div>
@@ -194,16 +200,36 @@ export default function Page() {
           </div>
         )}
         
-        {chartData.length > 0 && (
+        {data.length > 0 && (
           <div>
             <h3>Latency Distribution</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}>
+              <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="label" angle={-20} textAnchor="end" height={50} />
                 <YAxis />
                 <Tooltip />
                 <Bar dataKey="count" />
+                {labelP50 && (
+                  <ReferenceLine x={labelP50} stroke="#111827" strokeDasharray="3 3">
+                    <Label value="p50" position="top" />
+                  </ReferenceLine>
+                )}
+                {labelP95 && (
+                  <ReferenceLine x={labelP95} stroke="#374151" strokeDasharray="3 3">
+                    <Label value="p95" position="top" />
+                  </ReferenceLine>
+                )}
+                {labelP99 && (
+                  <ReferenceLine x={labelP99} stroke="#6B7280" strokeDasharray="3 3">
+                    <Label value="p99" position="top" />
+                  </ReferenceLine>
+                )}
+                {labelSLO && (
+                  <ReferenceLine x={labelSLO} stroke="#DC2626" strokeDasharray="5 3">
+                    <Label value="SLO" position="top" />
+                  </ReferenceLine>
+                )}
               </BarChart>
             </ResponsiveContainer>
           </div>
