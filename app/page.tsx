@@ -9,47 +9,7 @@ import { LlmResponseRecord } from "../types/llm";
 import { fmtNumber, fmtTime } from "../utils/formatters";
 import { HistBin, UiState } from "../store/uiTypes";
 import { reducer } from "../store/reducer";
-
-function quantile(values: number[], q: number) {
-  if (!values.length) return undefined;
-  const arr = values.slice().sort((a, b) => a - b);
-  const pos = (arr.length - 1) * q;
-  const base = Math.floor(pos);
-  const rest = pos - base;
-  return arr[base + 1] !== undefined ? arr[base] + rest * (arr[base + 1] - arr[base]) : arr[base];
-}
-
-function buildHistogram(lats: number[], desiredBins = 24): {
-  bins: HistBin[], p50?: number, p95?: number, p99?: number
-} {
-  if (!lats.length) return { bins: [] };
-  const p50 = quantile(lats, 0.5);
-  const p95 = quantile(lats, 0.95);
-  const p99 = quantile(lats, 0.99);
-
-  let min = Math.min(...lats);
-  let max = Math.max(...lats);
-  if (max === min) max = min + 1;
-
-  const binsCount = Math.max(1, Math.min(120, desiredBins));
-  const width = (max - min) / binsCount;
-  const counts = new Array(binsCount).fill(0);
-  for (const v of lats) {
-    let idx = Math.floor((v - min) / width);
-    if (idx >= binsCount) idx = binsCount - 1;
-    if (idx < 0) idx = 0;
-    counts[idx]++;
-  }
-  const total = lats.length;
-  const bins: HistBin[] = [];
-  for (let i = 0; i < binsCount; i++) {
-    const startMs = min + i * width;
-    const endMs = startMs + width;
-    const count = counts[i];
-    bins.push({ startMs, endMs, count, pct: (count / total) * 100 });
-  }
-  return { bins, p50, p95, p99 };
-}
+import { useComputeWorker } from "../hooks/useComputeWorker";
 
 function parseStrict(json: any): LlmResponseRecord[] {
   if (typeof json !== "object" || json === null || !Array.isArray(json.responses)) {
@@ -93,21 +53,34 @@ const initialState: UiState = {
   locale: typeof navigator !== "undefined" ? navigator.language : "en-US",
   timeZone: typeof Intl !== "undefined"
     ? Intl.DateTimeFormat().resolvedOptions().timeZone
-    : "UTC"
+    : "UTC",
+  workerResults: undefined,
+  workerError: undefined
 };
 
 export default function Page() {
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  useComputeWorker(state, dispatch);
 
   const latencies = useMemo(
     () => state.records.map(r => Number(r.response_time_ms)).filter((n) => Number.isFinite(n)),
     [state.records]
   );
 
-  const { bins, p50, p95, p99 } = useMemo(
-    () => buildHistogram(latencies, 24),
-    [latencies]
-  );
+  // Use worker results only
+  const { bins, p50, p95, p99 } = useMemo(() => {
+    if (state.workerResults) {
+      return {
+        bins: state.workerResults.histBins,
+        p50: state.workerResults.stats.p50,
+        p95: state.workerResults.stats.p95,
+        p99: state.workerResults.stats.p99
+      };
+    }
+    // No data until worker returns results
+    return { bins: [], p50: undefined, p95: undefined, p99: undefined };
+  }, [state.workerResults]);
 
   const data = useMemo(
     () => bins.map(b => ({ ...b, label: `${Math.round(b.startMs)}–${Math.round(b.endMs)} ms` })),
@@ -163,6 +136,12 @@ export default function Page() {
       {state.error && (
         <div>
           {state.error}
+        </div>
+      )}
+
+      {state.workerError && (
+        <div>
+          Worker Error: {state.workerError}
         </div>
       )}
 
