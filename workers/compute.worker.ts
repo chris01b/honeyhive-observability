@@ -23,7 +23,7 @@ const quantile = (values: number[], q: number): number | undefined => {
   return arr[base + 1] !== undefined ? arr[base] + rest * (arr[base + 1] - arr[base]) : arr[base];
 };
 
-const buildHistogram = (lats: number[], desiredBins = 24) => {
+const buildHistogram = (lats: number[], desiredBins = 24, binWidthMs?: number) => {
   if (!lats.length) return { 
     bins: [], 
     p50: undefined, 
@@ -39,8 +39,14 @@ const buildHistogram = (lats: number[], desiredBins = 24) => {
   let max = Math.max(...lats);
   if (max === min) max = min + 1;
 
-  const binsCount = Math.max(1, Math.min(120, desiredBins));
-  const width = (max - min) / binsCount;
+  let width = binWidthMs != null ? binWidthMs : (max - min) / Math.max(1, desiredBins);
+  if (width <= 0 || !isFinite(width)) width = (max - min) / Math.max(1, desiredBins);
+  let binsCount = Math.ceil((max - min) / width);
+  if (binsCount > 120) {
+    binsCount = 120;
+    width = (max - min) / binsCount;
+  }
+  binsCount = Math.max(1, binsCount);
   const counts = new Array(binsCount).fill(0);
   
   for (const v of lats) {
@@ -111,7 +117,7 @@ const compute = (): void => {
       .map(i => Number(records[i].response_time_ms))
       .filter((n) => Number.isFinite(n));
 
-    const { bins, p50, p95, p99 } = buildHistogram(visibleLatencies, settings.desiredBins);
+    const { bins, p50, p95, p99 } = buildHistogram(visibleLatencies, settings.desiredBins, settings.binWidthMs);
     
     // Calculate additional stats (visible records for histogram-related stats)
     const errorCount = records.filter(r => r.status === "error").length;

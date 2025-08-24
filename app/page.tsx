@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useReducer } from "react";
+import React, { useMemo, useReducer, useState } from "react";
 import { LlmResponseRecord } from "../types/llm";
 import { UiState } from "../store/uiTypes";
 import { reducer } from "../store/reducer";
@@ -103,6 +103,10 @@ export default function Page() {
 
   const selectedModel = state.filters.models?.[0] ?? "All";
 
+  // Local input states for bin controls
+  const [binsInput, setBinsInput] = useState(String(state.settings.desiredBins));
+  const [binWidthInput, setBinWidthInput] = useState(state.settings.binWidthMs ? String(state.settings.binWidthMs) : "");
+
   // Get filtered rows based on visibleIndices from worker
   const visibleRows = useMemo(
     () => state.visibleIndices.map((i) => state.records[i]!),
@@ -156,20 +160,81 @@ export default function Page() {
                 </option>
               ))}
             </select>
-        </label>
+          </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-slate-600">SLO (ms)</span>
-          <input
-            type="number"
-            min={1}
-            step={10}
+            <input
+              type="number"
+              min={1}
+              step={10}
               className="min-w-[120px] border border-slate-300 px-2 py-1"
               value={state.settings.sloMs}
               onChange={(e) => dispatch({ 
                 type: "settings/set", 
                 payload: { sloMs: Math.max(1, Number(e.target.value) || 1) }
               })}
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-sm text-slate-600">Desired bins</span>
+            <input
+              type="number"
+              min={1}
+              max={120}
+              className="min-w-[120px] border border-slate-300 px-2 py-1"
+              value={binsInput}
+              onChange={(e) => {
+                setBinsInput(e.target.value);
+                const num = Number(e.target.value);
+                if (num >= 1 && num <= 120) {
+                  dispatch({
+                    type: "settings/set",
+                    payload: {
+                      desiredBins: num,
+                      binWidthMs: undefined
+                    }
+                  });
+                }
+              }}
+              onBlur={() => {
+                if (!binsInput || Number(binsInput) < 1 || Number(binsInput) > 120) {
+                  setBinsInput("40");
+                  dispatch({
+                    type: "settings/set",
+                    payload: { desiredBins: 40, binWidthMs: undefined }
+                  });
+                }
+              }}
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-sm text-slate-600">Bin width (ms)</span>
+            <input
+              type="number"
+              min={1}
+              placeholder="auto"
+              className="min-w-[120px] border border-slate-300 px-2 py-1"
+              value={binWidthInput}
+              onChange={(e) => {
+                setBinWidthInput(e.target.value);
+                const num = Number(e.target.value);
+                dispatch({
+                  type: "settings/set",
+                  payload: { binWidthMs: e.target.value === "" ? undefined : (num > 0 ? num : undefined) }
+                });
+              }}
+              onBlur={() => {
+                if (binWidthInput && Number(binWidthInput) <= 0) {
+                  setBinWidthInput("");
+                  dispatch({
+                    type: "settings/set",
+                    payload: { binWidthMs: undefined }
+                  });
+                }
+              }}
             />
           </label>
       </div>
