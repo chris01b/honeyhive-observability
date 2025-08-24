@@ -6,21 +6,9 @@ import {
   CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine, Label
 } from "recharts";
 import { LlmResponseRecord } from "../types/llm";
+import { fmtNumber, fmtTime } from "../utils/formatters";
 
 type HistBin = { startMs: number; endMs: number; count: number; pct: number };
-
-const fmtNumber = (n: number | undefined, digits = 0) =>
-  typeof n === "number" && Number.isFinite(n) ? n.toFixed(digits) : "—";
-
-const fmtTime = (iso?: string, locale = "en-US", timeZone = "UTC") => {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat(locale, {
-    timeZone, year: "2-digit", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit"
-  }).format(d);
-};
 
 function quantile(values: number[], q: number) {
   if (!values.length) return undefined;
@@ -72,7 +60,6 @@ function parseStrict(json: any): LlmResponseRecord[] {
     typeof v === "number" && Number.isFinite(v) ? v : undefined;
 
   return json.responses.map((r: any) => {
-    // Return the record in snake_case format to match the interface
     return {
       id: typeof r.id === "string" ? r.id : undefined,
       timestamp: typeof r.timestamp === "string" ? r.timestamp : undefined,
