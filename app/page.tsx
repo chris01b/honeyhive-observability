@@ -277,31 +277,31 @@ export default function Page() {
             />
           </label>
 
-          {state.isComputing && state.records.length > 0 && (
-            <span className="inline-flex items-center gap-2 text-slate-500 text-sm ml-auto flex-shrink-0">
-              <span className="h-3.5 w-3.5 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin" aria-hidden />
-              Updating…
-            </span>
-          )}
-
-          {state.filters.latencyRanges?.length ? (
-            <>
-              <span className="inline-flex items-center px-3 py-1 rounded-full border border-slate-200 bg-slate-100 text-sm flex-shrink-0">
-                {state.filters.latencyRanges
-                  .map((r) => `${Math.round(r.min)}–${Math.round(r.max)} ms`)
-                  .join(", ")}
+          <div className="ml-auto flex-shrink-0 flex items-center gap-3">
+            {state.filters.latencyRanges?.length ? (
+              <>
+                <span className="inline-flex items-center px-3 py-1 rounded-full border border-slate-200 bg-slate-100 text-sm flex-shrink-0">
+                  {state.filters.latencyRanges
+                    .map((r) => `${Math.round(r.min)}–${Math.round(r.max)} ms`)
+                    .join(", ")}
+                </span>
+                <button
+                  className="rounded-md border border-slate-300 px-3 py-1 text-sm bg-white hover:bg-slate-50 flex-shrink-0"
+                  onClick={() =>
+                    dispatch({ type: "filters/patch", payload: { latencyRanges: [] } })
+                  }
+                  aria-label="Clear latency range selection"
+                >
+                  Clear selection
+                </button>
+              </>
+            ) : state.isComputing && state.records.length > 0 ? (
+              <span className="inline-flex items-center gap-2 text-slate-500 text-sm">
+                <span className="h-3.5 w-3.5 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin" aria-hidden />
+                Updating…
               </span>
-              <button
-                className="rounded-md border border-slate-300 px-3 py-1 text-sm bg-white hover:bg-slate-50 flex-shrink-0"
-                onClick={() =>
-                  dispatch({ type: "filters/patch", payload: { latencyRanges: [] } })
-                }
-                aria-label="Clear latency range selection"
-              >
-                Clear selection
-              </button>
-            </>
-          ) : null}
+            ) : null}
+          </div>
         </div>
       </div>
 
