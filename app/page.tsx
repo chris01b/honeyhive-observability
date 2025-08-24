@@ -203,12 +203,32 @@ export default function Page() {
         {data.length > 0 && (
           <div>
             <h3>Latency Distribution</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data}>
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart data={data} margin={{ top: 24, right: 10, bottom: 24, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="label" angle={-20} textAnchor="end" height={50} />
-                <YAxis />
-                <Tooltip />
+                <XAxis
+                  dataKey="label"
+                  interval={0}
+                  angle={-20}
+                  textAnchor="end"
+                  height={50}
+                  tick={{ fontSize: 12 }}
+                  label={{ value: "Latency (ms)", position: "insideBottom", offset: -10 }}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fontSize: 12 }}
+                  label={{ value: "Completions", angle: -90, position: "insideLeft" }}
+                />
+                <Tooltip
+                  formatter={(value: any, name: any, props: any) => {
+                    if (name === "count") {
+                      const pct = (props?.payload?.pct ?? 0).toFixed(1);
+                      return [`${value} • ${pct}%`, "Completions"];
+                    }
+                    return [value, name];
+                  }}
+                />
                 <Bar dataKey="count" />
                 {labelP50 && (
                   <ReferenceLine x={labelP50} stroke="#111827" strokeDasharray="3 3">
