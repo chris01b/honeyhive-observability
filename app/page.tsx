@@ -2,11 +2,11 @@
 
 import React, { useMemo, useReducer } from "react";
 import { LlmResponseRecord } from "../types/llm";
-import { fmtNumber, fmtTime } from "../utils/formatters";
 import { HistBin, UiState } from "../store/uiTypes";
 import { reducer } from "../store/reducer";
 import { useComputeWorker } from "../hooks/useComputeWorker";
 import { HistogramLatency } from "../components/HistogramLatency";
+import { DataGrid } from "../components/DataGrid";
 
 function parseStrict(json: any): LlmResponseRecord[] {
   if (typeof json !== "object" || json === null || !Array.isArray(json.responses)) {
@@ -146,32 +146,11 @@ export default function Page() {
             sloMs={state.sloMs}
           />
         )}
-        {state.records.length > 0 ? (
-          <table className="w-full">
-            <thead>
-              <tr className="">
-                <th className="text-left">ID</th>
-                <th className="text-left">Timestamp</th>
-                <th className="text-left">Model</th>
-                <th className="text-left">Status</th>
-                <th className="text-left">Response Time (ms)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {state.records.map((r, i) => (
-                <tr key={r.id ?? i} className="border-b">
-                  <td>{r.id ?? "—"}</td>
-                  <td>{fmtTime(r.timestamp, state.locale, state.timeZone)}</td>
-                  <td>{r.model ?? "—"}</td>
-                  <td>{r.status ?? "—"}</td>
-                  <td>{fmtNumber(r.response_time_ms)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p>No data loaded. Upload a JSON file to get started.</p>
-        )}
+        <DataGrid
+          rows={state.records}
+          locale={state.locale}
+          timeZone={state.timeZone}
+        />
       </div>
     </div>
   );
