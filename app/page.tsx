@@ -166,6 +166,7 @@ export default function Page() {
             <select
               className="min-w-[140px] rounded-md border border-slate-300 px-2 py-1"
               value={selectedModel}
+              aria-label="Filter by model"
               onChange={(e) =>
                 dispatch({
                   type: "filters/patch",
@@ -189,6 +190,7 @@ export default function Page() {
               step={10}
               className="min-w-[120px] rounded-md border border-slate-300 px-2 py-1"
               value={sloInput}
+              aria-label="SLO threshold in milliseconds"
               onChange={(e) => {
                 setSloInput(e.target.value);
                 const num = Number(e.target.value);
@@ -219,6 +221,7 @@ export default function Page() {
               max={120}
               className="min-w-[120px] rounded-md border border-slate-300 px-2 py-1"
               value={binsInput}
+              aria-label="Number of histogram bins"
               onChange={(e) => {
                 setBinsInput(e.target.value);
                 const num = Number(e.target.value);
@@ -252,6 +255,7 @@ export default function Page() {
               placeholder="auto"
               className="min-w-[120px] rounded-md border border-slate-300 px-2 py-1"
               value={binWidthInput}
+              aria-label="Bin width in milliseconds"
               onChange={(e) => {
                 setBinWidthInput(e.target.value);
                 const num = Number(e.target.value);
@@ -292,6 +296,7 @@ export default function Page() {
               onClick={() =>
                 dispatch({ type: "filters/patch", payload: { latencyRanges: [] } })
               }
+              aria-label="Clear latency range selection"
             >
               Clear selection
             </button>
