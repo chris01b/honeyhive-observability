@@ -254,7 +254,7 @@ export default function Page() {
             type="number"
             min={1}
               placeholder="auto"
-              className="w-[120px] rounded-md border border-slate-300 px-2 py-1"
+            className="w-[120px] rounded-md border border-slate-300 px-2 py-1"
               value={binWidthInput}
               aria-label="Bin width in milliseconds"
               onChange={(e) => {

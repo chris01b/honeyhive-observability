@@ -103,6 +103,8 @@ export const HistogramLatency: React.FC<Props> = ({
                 : event.activeIndex;
               if (!isNaN(index) && data[index]) {
                 const payload = data[index];
+                // Don't allow clicking on empty bins
+                if (payload.count === 0) return;
                 const range = { min: payload.startMs as number, max: payload.endMs as number };
                 onSelectRange(range, false);
               }
@@ -134,7 +136,7 @@ export const HistogramLatency: React.FC<Props> = ({
               return [String(value), String(name)] as [string, string];
             }}
           />
-          <Bar dataKey="count" />
+          <Bar dataKey="count" cursor="pointer" />
           {labelP50 && (
             <ReferenceLine x={labelP50} stroke="#111827" strokeDasharray="3 3">
               <Label value="p50" position="top" />
