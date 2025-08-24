@@ -10,6 +10,8 @@ type LlmResponse = {
   responseTimeMs: number;
 };
 
+type HistBin = { startMs: number; endMs: number; count: number; pct: number };
+
 const fmtNumber = (n: number | undefined, digits = 0) =>
   typeof n === "number" && Number.isFinite(n) ? n.toFixed(digits) : "—";
 
@@ -22,6 +24,47 @@ const fmtTime = (iso?: string, locale = "en-US", timeZone = "UTC") => {
     hour: "2-digit", minute: "2-digit", second: "2-digit"
   }).format(d);
 };
+
+function quantile(values: number[], q: number) {
+  if (!values.length) return undefined;
+  const arr = values.slice().sort((a, b) => a - b);
+  const pos = (arr.length - 1) * q;
+  const base = Math.floor(pos);
+  const rest = pos - base;
+  return arr[base + 1] !== undefined ? arr[base] + rest * (arr[base + 1] - arr[base]) : arr[base];
+}
+
+function buildHistogram(lats: number[], desiredBins = 24): {
+  bins: HistBin[], p50?: number, p95?: number, p99?: number
+} {
+  if (!lats.length) return { bins: [] };
+  const p50 = quantile(lats, 0.5);
+  const p95 = quantile(lats, 0.95);
+  const p99 = quantile(lats, 0.99);
+
+  let min = Math.min(...lats);
+  let max = Math.max(...lats);
+  if (max === min) max = min + 1;
+
+  const binsCount = Math.max(1, Math.min(120, desiredBins));
+  const width = (max - min) / binsCount;
+  const counts = new Array(binsCount).fill(0);
+  for (const v of lats) {
+    let idx = Math.floor((v - min) / width);
+    if (idx >= binsCount) idx = binsCount - 1;
+    if (idx < 0) idx = 0;
+    counts[idx]++;
+  }
+  const total = lats.length;
+  const bins: HistBin[] = [];
+  for (let i = 0; i < binsCount; i++) {
+    const startMs = min + i * width;
+    const endMs = startMs + width;
+    const count = counts[i];
+    bins.push({ startMs, endMs, count, pct: (count / total) * 100 });
+  }
+  return { bins, p50, p95, p99 };
+}
 
 function parseData(json: any): LlmResponse[] {
   if (!json.responses || !Array.isArray(json.responses)) {
@@ -50,6 +93,11 @@ export default function Page() {
   const latencies = useMemo(
     () => data.map(r => Number(r.responseTimeMs)).filter((n) => Number.isFinite(n)),
     [data]
+  );
+
+  const { bins, p50, p95, p99 } = useMemo(
+    () => buildHistogram(latencies, 24),
+    [latencies]
   );
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,7 +137,10 @@ export default function Page() {
       <div>
         <h2>Responses ({data.length})</h2>
         {latencies.length > 0 && (
-          <p>Latency data points: {latencies.length}</p>
+          <div>
+            <p>Latency data points: {latencies.length}</p>
+            <p>p50: {p50 != null ? `${Math.round(p50)} ms` : "—"} | p95: {p95 != null ? `${Math.round(p95)} ms` : "—"} | p99: {p99 != null ? `${Math.round(p99)} ms` : "—"}</p>
+          </div>
         )}
         {data.length > 0 ? (
           <table className="w-full">
