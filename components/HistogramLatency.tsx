@@ -54,7 +54,7 @@ export const HistogramLatency: React.FC<Props> = ({
   if (!bins.length) {
     return (
       <div className="rounded-lg border border-dashed border-slate-200 bg-white p-6 text-center text-slate-500">
-        No data to visualize.
+        {hasRecords ? "No histogram bins to display." : "No data to visualize."}
       </div>
     );
   }
