@@ -126,19 +126,24 @@ export default function Page() {
   }
 
   return (
-    <div>
-      <h1>LLM Response Dashboard</h1>
-      
-      <div>
-        <Dropzone onFile={handleFile} />
-        </div>
+    <main className="max-w-[1100px] mx-auto my-6 px-4 flex flex-col gap-4">
+      {state.error && (
+        <ErrorBanner
+          message={state.error.msg}
+          onClear={() => dispatch({ type: "ui/clearError" })}
+        />
+      )}
 
-      <div>
+      <div className="border border-slate-200 rounded-lg p-4 bg-white">
+        <Dropzone onFile={handleFile} />
+      </div>
+
+      <div className="border border-slate-200 rounded-lg p-4 bg-white">
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1">
             <span className="text-sm text-slate-600">Model</span>
             <select
-              className="min-w-[140px] border border-slate-300 px-2 py-1"
+              className="min-w-[140px] rounded-md border border-slate-300 px-2 py-1"
               value={selectedModel}
               onChange={(e) =>
                 dispatch({
@@ -157,11 +162,11 @@ export default function Page() {
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-slate-600">SLO (ms)</span>
-          <input
+            <input
               type="number"
               min={1}
               step={10}
-              className="min-w-[120px] border border-slate-300 px-2 py-1"
+              className="min-w-[120px] rounded-md border border-slate-300 px-2 py-1"
               value={state.settings.sloMs}
               onChange={(e) => dispatch({ 
                 type: "settings/set", 
@@ -176,7 +181,7 @@ export default function Page() {
               type="number"
               min={1}
               max={120}
-              className="min-w-[120px] border border-slate-300 px-2 py-1"
+              className="min-w-[120px] rounded-md border border-slate-300 px-2 py-1"
               value={binsInput}
               onChange={(e) => {
                 setBinsInput(e.target.value);
@@ -205,11 +210,11 @@ export default function Page() {
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-slate-600">Bin width (ms)</span>
-          <input
+            <input
             type="number"
             min={1}
               placeholder="auto"
-              className="min-w-[120px] border border-slate-300 px-2 py-1"
+              className="min-w-[120px] rounded-md border border-slate-300 px-2 py-1"
               value={binWidthInput}
               onChange={(e) => {
                 setBinWidthInput(e.target.value);
@@ -234,13 +239,13 @@ export default function Page() {
 
         {state.filters.latencyRanges?.length ? (
           <div className="mt-3 flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center px-3 py-1 border border-slate-200 bg-slate-100 text-sm">
+            <span className="inline-flex items-center px-3 py-1 rounded-full border border-slate-200 bg-slate-100 text-sm">
               {state.filters.latencyRanges
                 .map((r) => `${Math.round(r.min)}–${Math.round(r.max)} ms`)
                 .join(", ")}
             </span>
             <button
-              className="border border-slate-300 px-3 py-1 text-sm bg-white"
+              className="rounded-md border border-slate-300 px-3 py-1 text-sm bg-white hover:bg-slate-50"
               onClick={() =>
                 dispatch({ type: "filters/patch", payload: { latencyRanges: [] } })
               }
@@ -248,15 +253,8 @@ export default function Page() {
               Clear selection
             </button>
           </div>
-        ) : null}
+      ) : null}
         </div>
-
-      {state.error && (
-        <ErrorBanner
-          message={state.error.msg}
-          onClear={() => dispatch({ type: "ui/clearError" })}
-        />
-      )}
 
       {bins.length > 0 && (
         <HistogramLatency
@@ -292,7 +290,7 @@ export default function Page() {
           onClose={() => dispatch({ type: "modal/close" })}
           locale={state.settings.locale}
           timeZone={state.settings.timeZone}
-        />
-      </div>
+                />
+    </main>
   );
 }
