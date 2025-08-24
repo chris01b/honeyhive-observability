@@ -51,17 +51,6 @@ export const HistogramLatency: React.FC<Props> = ({
     [bins]
   );
 
-  if (isComputing && hasRecords) {
-    return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500">
-        <div className="flex items-center justify-center gap-2">
-          <span className="h-3.5 w-3.5 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin" aria-hidden />
-          <span>Computing…</span>
-        </div>
-      </div>
-    );
-  }
-
   if (!bins.length) {
     return (
       <div className="rounded-lg border border-dashed border-slate-200 bg-white p-6 text-center text-slate-500">
@@ -86,7 +75,12 @@ export const HistogramLatency: React.FC<Props> = ({
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <h3 className="m-0 text-base font-semibold">Latency Distribution (Histogram)</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="m-0 text-base font-semibold">Latency Distribution (Histogram)</h3>
+          {isComputing && hasRecords && (
+            <span className="h-3.5 w-3.5 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin" aria-hidden />
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5">p50: {stats.p50 != null ? `${Math.round(stats.p50)} ms` : "—"}</span>
           <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5">p95: {stats.p95 != null ? `${Math.round(stats.p95)} ms` : "—"}</span>

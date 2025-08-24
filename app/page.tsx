@@ -161,11 +161,11 @@ export default function Page() {
       </div>
 
       <div className="border border-slate-200 rounded-lg p-4 bg-white">
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1">
+        <div className="flex items-end gap-3 min-h-[3rem] overflow-x-auto">
+          <label className="flex flex-col gap-1 flex-shrink-0">
             <span className="text-sm text-slate-600">Model</span>
             <select
-              className="min-w-[140px] rounded-md border border-slate-300 px-2 py-1"
+              className="w-[140px] rounded-md border border-slate-300 px-2 py-1"
               value={selectedModel}
               aria-label="Filter by model"
               onChange={(e) =>
@@ -183,13 +183,13 @@ export default function Page() {
             </select>
           </label>
 
-          <label className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1 flex-shrink-0">
             <span className="text-sm text-slate-600">SLO (ms)</span>
           <input
               type="number"
               min={1}
               step={10}
-              className="min-w-[120px] rounded-md border border-slate-300 px-2 py-1"
+              className="w-[120px] rounded-md border border-slate-300 px-2 py-1"
               value={sloInput}
               aria-label="SLO threshold in milliseconds"
               onChange={(e) => {
@@ -214,13 +214,13 @@ export default function Page() {
           />
         </label>
 
-          <label className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1 flex-shrink-0">
             <span className="text-sm text-slate-600">Desired bins</span>
             <input
               type="number"
               min={1}
               max={120}
-              className="min-w-[120px] rounded-md border border-slate-300 px-2 py-1"
+              className="w-[120px] rounded-md border border-slate-300 px-2 py-1"
               value={binsInput}
               aria-label="Number of histogram bins"
               onChange={(e) => {
@@ -248,13 +248,13 @@ export default function Page() {
             />
           </label>
 
-          <label className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1 flex-shrink-0">
             <span className="text-sm text-slate-600">Bin width (ms)</span>
           <input
             type="number"
             min={1}
               placeholder="auto"
-              className="min-w-[120px] rounded-md border border-slate-300 px-2 py-1"
+              className="w-[120px] rounded-md border border-slate-300 px-2 py-1"
               value={binWidthInput}
               aria-label="Bin width in milliseconds"
               onChange={(e) => {
@@ -278,32 +278,32 @@ export default function Page() {
           </label>
 
           {state.isComputing && state.records.length > 0 && (
-            <span className="inline-flex items-center gap-2 text-slate-500 text-sm ml-auto">
+            <span className="inline-flex items-center gap-2 text-slate-500 text-sm ml-auto flex-shrink-0">
               <span className="h-3.5 w-3.5 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin" aria-hidden />
               Updating…
             </span>
           )}
-      </div>
 
-        {state.filters.latencyRanges?.length ? (
-          <div className="mt-3 flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center px-3 py-1 rounded-full border border-slate-200 bg-slate-100 text-sm">
-              {state.filters.latencyRanges
-                .map((r) => `${Math.round(r.min)}–${Math.round(r.max)} ms`)
-                .join(", ")}
-            </span>
-            <button
-              className="rounded-md border border-slate-300 px-3 py-1 text-sm bg-white hover:bg-slate-50"
-              onClick={() =>
-                dispatch({ type: "filters/patch", payload: { latencyRanges: [] } })
-              }
-              aria-label="Clear latency range selection"
-            >
-              Clear selection
-            </button>
-          </div>
-      ) : null}
+          {state.filters.latencyRanges?.length ? (
+            <>
+              <span className="inline-flex items-center px-3 py-1 rounded-full border border-slate-200 bg-slate-100 text-sm flex-shrink-0">
+                {state.filters.latencyRanges
+                  .map((r) => `${Math.round(r.min)}–${Math.round(r.max)} ms`)
+                  .join(", ")}
+              </span>
+              <button
+                className="rounded-md border border-slate-300 px-3 py-1 text-sm bg-white hover:bg-slate-50 flex-shrink-0"
+                onClick={() =>
+                  dispatch({ type: "filters/patch", payload: { latencyRanges: [] } })
+                }
+                aria-label="Clear latency range selection"
+              >
+                Clear selection
+              </button>
+            </>
+          ) : null}
         </div>
+      </div>
 
       <HistogramLatency
         bins={state.histBins}
