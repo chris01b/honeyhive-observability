@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useReducer, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { LlmResponseRecord } from "../types/llm";
 import { UiState } from "../store/uiTypes";
 import { reducer } from "../store/reducer";
@@ -85,8 +85,6 @@ export default function Page() {
 
   useComputeWorker(state, dispatch);
 
-  const { histBins: bins, stats } = state;
-
   // Extract available models for filtering
   const modelOptions = useMemo(() => {
     const set = new Set<string>();
@@ -122,12 +120,15 @@ export default function Page() {
 
 
 
-  async function handleFile(file: File) {
+  const handleFiles = useCallback(async (files: FileList) => {
+    const file = files[0];
+    if (!file) return;
     dispatch({ type: "ui/parsing", payload: true });
     try {
       const text = await file.text();
       const json = JSON.parse(text);
-      dispatch({ type: "load/records", payload: parseStrict(json) });
+      const records = parseStrict(json);
+      dispatch({ type: "load/records", payload: records });
     } catch (e: unknown) {
       dispatch({ type: "load/records", payload: [] });
       dispatch({
@@ -137,7 +138,7 @@ export default function Page() {
     } finally {
       dispatch({ type: "ui/parsing", payload: false });
     }
-  }
+  }, []);
 
   return (
     <main className="max-w-[1100px] mx-auto my-6 px-4 flex flex-col gap-4">
@@ -156,7 +157,7 @@ export default function Page() {
       )}
 
       <div className="border border-slate-200 rounded-lg p-4 bg-white">
-        <Dropzone onFile={handleFile} />
+        <Dropzone onFiles={handleFiles} />
       </div>
 
       <div className="border border-slate-200 rounded-lg p-4 bg-white">
@@ -184,7 +185,7 @@ export default function Page() {
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-slate-600">SLO (ms)</span>
-            <input
+          <input
               type="number"
               min={1}
               step={10}
@@ -210,8 +211,8 @@ export default function Page() {
                   });
                 }
               }}
-            />
-          </label>
+          />
+        </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-slate-600">Desired bins</span>
@@ -249,9 +250,9 @@ export default function Page() {
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-slate-600">Bin width (ms)</span>
-            <input
-              type="number"
-              min={1}
+          <input
+            type="number"
+            min={1}
               placeholder="auto"
               className="min-w-[120px] rounded-md border border-slate-300 px-2 py-1"
               value={binWidthInput}
@@ -282,7 +283,7 @@ export default function Page() {
               Updating…
             </span>
           )}
-        </div>
+      </div>
 
         {state.filters.latencyRanges?.length ? (
           <div className="mt-3 flex items-center gap-2 flex-wrap">
@@ -304,34 +305,36 @@ export default function Page() {
       ) : null}
         </div>
 
-      {bins.length > 0 && (
-        <HistogramLatency
-          bins={bins}
-          stats={stats}
-          sloMs={state.settings.sloMs}
-          onSelectRange={(range, additive) => {
-            const current = state.filters.latencyRanges ?? [];
-            const next = additive ? [...current, range] : [range];
-            dispatch({ type: "filters/patch", payload: { latencyRanges: next } });
-          }}
+      <HistogramLatency
+        bins={state.histBins}
+        stats={state.stats}
+        sloMs={state.settings.sloMs}
+        locale={state.settings.locale}
+        timeZone={state.settings.timeZone}
+        isComputing={state.isComputing}
+        hasRecords={state.records.length > 0}
+        onSelectRange={(range, additive) => {
+          const current = state.filters.latencyRanges ?? [];
+          const next = additive ? [...current, range] : [range];
+          dispatch({ type: "filters/patch", payload: { latencyRanges: next } });
+        }}
+      />
+
+      {visibleRows.length === 0 ? (
+        <EmptyState
+          title="No data loaded yet"
+          subtitle="Upload a JSON array of LLM responses to begin."
+        />
+      ) : (
+        <DataGrid
+          rows={visibleRows}
+          sort={state.sort}
+          onSortChange={(sort) => dispatch({ type: "sort/set", payload: sort })}
+          onOpen={(record) => dispatch({ type: "modal/open", payload: record })}
+          locale={state.settings.locale}
+          timeZone={state.settings.timeZone}
         />
       )}
-
-      {state.records.length === 0 ? (
-          <EmptyState
-            title="No data loaded yet"
-            subtitle="Upload a JSON file to begin."
-          />
-        ) : (
-          <DataGrid
-            rows={visibleRows}
-            sort={state.sort}
-            onSortChange={(sort) => dispatch({ type: "sort/set", payload: sort })}
-            onOpen={(record) => dispatch({ type: "modal/open", payload: record })}
-            locale={state.settings.locale}
-            timeZone={state.settings.timeZone}
-          />
-        )}
 
         <FullResponseModal
           record={state.selectedRecord}
