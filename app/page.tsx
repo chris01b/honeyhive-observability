@@ -1,15 +1,12 @@
 "use client";
 
 import React, { useMemo, useReducer } from "react";
-import {
-  ResponsiveContainer, BarChart, Bar,
-  CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine, Label
-} from "recharts";
 import { LlmResponseRecord } from "../types/llm";
 import { fmtNumber, fmtTime } from "../utils/formatters";
 import { HistBin, UiState } from "../store/uiTypes";
 import { reducer } from "../store/reducer";
 import { useComputeWorker } from "../hooks/useComputeWorker";
+import { HistogramLatency } from "../components/HistogramLatency";
 
 function parseStrict(json: any): LlmResponseRecord[] {
   if (typeof json !== "object" || json === null || !Array.isArray(json.responses)) {
@@ -82,20 +79,7 @@ export default function Page() {
     return { bins: [], p50: undefined, p95: undefined, p99: undefined };
   }, [state.workerResults]);
 
-  const data = useMemo(
-    () => bins.map(b => ({ ...b, label: `${Math.round(b.startMs)}–${Math.round(b.endMs)} ms` })),
-    [bins]
-  );
 
-  const findLabel = (value?: number) => {
-    if (value == null || !bins.length) return undefined;
-    const bin = bins.find(b => value >= b.startMs && value < b.endMs) ?? bins[bins.length - 1];
-    return `${Math.round(bin.startMs)}–${Math.round(bin.endMs)} ms`;
-  };
-  const labelP50 = findLabel(p50);
-  const labelP95 = findLabel(p95);
-  const labelP99 = findLabel(p99);
-  const labelSLO = findLabel(state.sloMs);
 
   async function handleFile(file: File) {
     dispatch({ type: "set/error", payload: null });
@@ -155,59 +139,12 @@ export default function Page() {
           </div>
         )}
         
-        {data.length > 0 && (
-          <div>
-            <h3>Latency Distribution</h3>
-            <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={data} margin={{ top: 24, right: 10, bottom: 24, left: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="label"
-                  interval={0}
-                  angle={-20}
-                  textAnchor="end"
-                  height={50}
-                  tick={{ fontSize: 12 }}
-                  label={{ value: "Latency (ms)", position: "insideBottom", offset: -10 }}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tick={{ fontSize: 12 }}
-                  label={{ value: "Completions", angle: -90, position: "insideLeft" }}
-                />
-                <Tooltip
-                  formatter={(value: any, name: any, props: any) => {
-                    if (name === "count") {
-                      const pct = (props?.payload?.pct ?? 0).toFixed(1);
-                      return [`${value} • ${pct}%`, "Completions"];
-                    }
-                    return [value, name];
-                  }}
-                />
-                <Bar dataKey="count" />
-                {labelP50 && (
-                  <ReferenceLine x={labelP50} stroke="#111827" strokeDasharray="3 3">
-                    <Label value="p50" position="top" />
-                  </ReferenceLine>
-                )}
-                {labelP95 && (
-                  <ReferenceLine x={labelP95} stroke="#374151" strokeDasharray="3 3">
-                    <Label value="p95" position="top" />
-                  </ReferenceLine>
-                )}
-                {labelP99 && (
-                  <ReferenceLine x={labelP99} stroke="#6B7280" strokeDasharray="3 3">
-                    <Label value="p99" position="top" />
-                  </ReferenceLine>
-                )}
-                {labelSLO && (
-                  <ReferenceLine x={labelSLO} stroke="#DC2626" strokeDasharray="5 3">
-                    <Label value="SLO" position="top" />
-                  </ReferenceLine>
-                )}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        {bins.length > 0 && state.workerResults && (
+          <HistogramLatency
+            bins={bins}
+            stats={state.workerResults.stats}
+            sloMs={state.sloMs}
+          />
         )}
         {state.records.length > 0 ? (
           <table className="w-full">
