@@ -8,6 +8,7 @@ import { useComputeWorker } from "../hooks/useComputeWorker";
 import { HistogramLatency } from "../components/HistogramLatency";
 import { DataGrid } from "../components/DataGrid";
 import { Dropzone } from "../components/Dropzone";
+import { FullResponseModal } from "../components/FullResponseModal";
 
 function parseStrict(json: any): LlmResponseRecord[] {
   if (typeof json !== "object" || json === null || !Array.isArray(json.responses)) {
@@ -53,7 +54,8 @@ const initialState: UiState = {
     ? Intl.DateTimeFormat().resolvedOptions().timeZone
     : "UTC",
   workerResults: undefined,
-  workerError: undefined
+  workerError: undefined,
+  selectedRecord: null
 };
 
 export default function Page() {
@@ -143,6 +145,14 @@ export default function Page() {
         )}
         <DataGrid
           rows={state.records}
+          locale={state.locale}
+          timeZone={state.timeZone}
+          onOpen={(record) => dispatch({ type: "modal/open", payload: record })}
+        />
+
+        <FullResponseModal
+          record={state.selectedRecord}
+          onClose={() => dispatch({ type: "modal/close" })}
           locale={state.locale}
           timeZone={state.timeZone}
         />

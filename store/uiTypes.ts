@@ -23,4 +23,5 @@ export type UiState = {
     };
   };
   workerError?: string;
+  selectedRecord: LlmResponseRecord | null;
 };

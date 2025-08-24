@@ -7,12 +7,14 @@ type Props = {
   rows: LlmResponseRecord[];
   locale: string;
   timeZone: string;
+  onOpen?: (row: LlmResponseRecord) => void;
 };
 
 export const DataGrid: React.FC<Props> = ({
   rows,
   locale,
-  timeZone
+  timeZone,
+  onOpen
 }) => {
   if (rows.length === 0) {
     return (
@@ -34,6 +36,7 @@ export const DataGrid: React.FC<Props> = ({
             <th className="text-left">Model</th>
             <th className="text-left">Status</th>
             <th className="text-left">Response Time (ms)</th>
+            <th className="text-left">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -44,6 +47,16 @@ export const DataGrid: React.FC<Props> = ({
               <td>{r.model ?? "—"}</td>
               <td>{r.status ?? "—"}</td>
               <td>{fmtNumber(r.response_time_ms)}</td>
+              <td>
+                {onOpen && (
+                  <button 
+                    className="text-sm text-blue-600 hover:underline"
+                    onClick={() => onOpen(r)}
+                  >
+                    View Details
+                  </button>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>

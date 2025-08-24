@@ -27,6 +27,18 @@ export function reducer(state: UiState, action: any): UiState {
         workerError: action.payload?.message || "Worker error" 
       };
 
+    case "modal/open":
+      return { 
+        ...state, 
+        selectedRecord: action.payload 
+      };
+
+    case "modal/close":
+      return { 
+        ...state, 
+        selectedRecord: null 
+      };
+
     default:
       return state;
   }
