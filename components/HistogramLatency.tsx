@@ -67,7 +67,6 @@ export const HistogramLatency: React.FC<Props> = ({
 
   const labelP50 = findLabel(stats.p50);
   const labelP95 = findLabel(stats.p95);
-  const labelP99 = findLabel(stats.p99);
   const labelSLO = findLabel(sloMs);
 
   const total = stats.n || bins.reduce((a, b) => a + b.count, 0);
@@ -84,7 +83,6 @@ export const HistogramLatency: React.FC<Props> = ({
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5">p50: {stats.p50 != null ? `${Math.round(stats.p50)} ms` : "—"}</span>
           <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5">p95: {stats.p95 != null ? `${Math.round(stats.p95)} ms` : "—"}</span>
-          <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5">p99: {stats.p99 != null ? `${Math.round(stats.p99)} ms` : "—"}</span>
           <span className="rounded-full border border-rose-100 bg-rose-50 px-2 py-0.5">&gt;SLO: {stats.overSloPct != null ? `${stats.overSloPct.toFixed(1)}%` : "—"}</span>
           <span className="text-slate-500">N={total}</span>
         </div>
@@ -145,11 +143,6 @@ export const HistogramLatency: React.FC<Props> = ({
           {labelP95 && (
             <ReferenceLine x={labelP95} stroke="#374151" strokeDasharray="3 3">
               <Label value="p95" position="top" />
-            </ReferenceLine>
-          )}
-          {labelP99 && (
-            <ReferenceLine x={labelP99} stroke="#6B7280" strokeDasharray="3 3">
-              <Label value="p99" position="top" />
             </ReferenceLine>
           )}
           {labelSLO && (
