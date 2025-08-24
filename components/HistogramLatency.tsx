@@ -19,9 +19,13 @@ type Props = {
   bins: HistBin[];
   stats: {
     n: number;
+    errPct: number;
     p50?: number;
     p95?: number;
     p99?: number;
+    totalCost?: number;
+    avgCostPer1k?: number;
+    overSloPct?: number;
   };
   sloMs: number;
   onSelectRange?: (range: { min: number; max: number }, additive: boolean) => void;
@@ -61,9 +65,20 @@ export const HistogramLatency: React.FC<Props> = ({
   const labelP99 = findLabel(stats.p99);
   const labelSLO = findLabel(sloMs);
 
+  const total = stats.n || bins.reduce((a, b) => a + b.count, 0);
+
   return (
-    <div>
-      <h3>Latency Distribution</h3>
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="m-0 text-base font-semibold">Latency Distribution (Histogram)</h3>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5">p50: {stats.p50 != null ? `${Math.round(stats.p50)} ms` : "—"}</span>
+          <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5">p95: {stats.p95 != null ? `${Math.round(stats.p95)} ms` : "—"}</span>
+          <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5">p99: {stats.p99 != null ? `${Math.round(stats.p99)} ms` : "—"}</span>
+          <span className="rounded-full border border-rose-100 bg-rose-50 px-2 py-0.5">&gt;SLO: {stats.overSloPct != null ? `${stats.overSloPct.toFixed(1)}%` : "—"}</span>
+          <span className="text-slate-500">N={total}</span>
+        </div>
+      </div>
       <ResponsiveContainer width="100%" height={320}>
         <BarChart 
           data={data} 
@@ -135,6 +150,7 @@ export const HistogramLatency: React.FC<Props> = ({
           )}
         </BarChart>
       </ResponsiveContainer>
+      
       {onSelectRange && (
         <div className="mt-1 text-xs text-slate-500">
           Click a bar to filter by latency range. Shift-click to multi-select.

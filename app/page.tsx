@@ -85,14 +85,7 @@ export default function Page() {
 
   useComputeWorker(state, dispatch);
 
-  const latencies = useMemo(
-    () => state.records.map(r => Number(r.response_time_ms)).filter((n) => Number.isFinite(n)),
-    [state.records]
-  );
-
-  // Use state directly now that worker updates it
   const { histBins: bins, stats } = state;
-  const { p50, p95, p99 } = stats;
 
   // Extract available models for filtering
   const modelOptions = useMemo(() => {
@@ -164,7 +157,7 @@ export default function Page() {
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-slate-600">SLO (ms)</span>
-            <input
+          <input
               type="number"
               min={1}
               step={10}
@@ -174,8 +167,8 @@ export default function Page() {
                 type: "settings/set", 
                 payload: { sloMs: Math.max(1, Number(e.target.value) || 1) }
               })}
-            />
-          </label>
+          />
+        </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-slate-600">Desired bins</span>
@@ -212,9 +205,9 @@ export default function Page() {
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-slate-600">Bin width (ms)</span>
-            <input
-              type="number"
-              min={1}
+          <input
+            type="number"
+            min={1}
               placeholder="auto"
               className="min-w-[120px] border border-slate-300 px-2 py-1"
               value={binWidthInput}
@@ -265,14 +258,6 @@ export default function Page() {
         />
       )}
 
-      {latencies.length > 0 && (
-        <div>
-          <p>Latency data points: {latencies.length}</p>
-          <p>p50: {p50 != null ? `${Math.round(p50)} ms` : "—"} | p95: {p95 != null ? `${Math.round(p95)} ms` : "—"} | p99: {p99 != null ? `${Math.round(p99)} ms` : "—"}</p>
-          <p>SLO violations: {latencies.filter(lat => lat > state.settings.sloMs).length} / {latencies.length} ({((latencies.filter(lat => lat > state.settings.sloMs).length / latencies.length) * 100).toFixed(1)}%)</p>
-        </div>
-      )}
-      
       {bins.length > 0 && (
         <HistogramLatency
           bins={bins}
@@ -308,6 +293,6 @@ export default function Page() {
           locale={state.settings.locale}
           timeZone={state.settings.timeZone}
         />
-    </div>
+      </div>
   );
 }
