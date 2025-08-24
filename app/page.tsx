@@ -7,6 +7,7 @@ import { reducer } from "../store/reducer";
 import { useComputeWorker } from "../hooks/useComputeWorker";
 import { HistogramLatency } from "../components/HistogramLatency";
 import { DataGrid } from "../components/DataGrid";
+import { Dropzone } from "../components/Dropzone";
 
 function parseStrict(json: any): LlmResponseRecord[] {
   if (typeof json !== "object" || json === null || !Array.isArray(json.responses)) {
@@ -65,7 +66,6 @@ export default function Page() {
     [state.records]
   );
 
-  // Use worker results only
   const { bins, p50, p95, p99 } = useMemo(() => {
     if (state.workerResults) {
       return {
@@ -75,7 +75,6 @@ export default function Page() {
         p99: state.workerResults.stats.p99
       };
     }
-    // No data until worker returns results
     return { bins: [], p50: undefined, p95: undefined, p99: undefined };
   }, [state.workerResults]);
 
@@ -98,11 +97,7 @@ export default function Page() {
       <h1>LLM Response Dashboard</h1>
       
       <div>
-        <input 
-          type="file" 
-          accept=".json" 
-          onChange={(e) => e.target.files && e.target.files[0] && handleFile(e.target.files[0])}
-        />
+        <Dropzone onFile={handleFile} />
         
         <div>
           <label htmlFor="slo">SLO (ms):</label>
