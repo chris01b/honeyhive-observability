@@ -13,7 +13,6 @@ import {
   Label
 } from "recharts";
 import { HistBin } from "../store/uiTypes";
-import { EmptyState } from "./EmptyState";
 
 type Props = {
   bins: HistBin[];
@@ -28,28 +27,45 @@ type Props = {
     overSloPct?: number;
   };
   sloMs: number;
-  onSelectRange?: (range: { min: number; max: number }, additive: boolean) => void;
+  locale: string;
+  timeZone: string;
+  isComputing: boolean;
+  hasRecords: boolean;
+  onSelectRange: (range: { min: number; max: number }, additive: boolean) => void;
 };
 
 export const HistogramLatency: React.FC<Props> = ({
   bins,
   stats,
   sloMs,
+  isComputing,
+  hasRecords,
   onSelectRange
 }) => {
   const data = useMemo(
-    () => bins.map(b => ({ ...b, label: `${Math.round(b.startMs)}–${Math.round(b.endMs)} ms` })),
+    () =>
+      bins.map((b) => ({
+        label: `${Math.round(b.startMs)}–${Math.round(b.endMs)} ms`,
+        ...b
+      })),
     [bins]
   );
 
+  if (isComputing && hasRecords) {
+    return (
+      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500">
+        <div className="flex items-center justify-center gap-2">
+          <span className="h-3.5 w-3.5 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin" aria-hidden />
+          <span>Computing…</span>
+        </div>
+      </div>
+    );
+  }
+
   if (!bins.length) {
     return (
-      <div>
-        <h3>Latency Distribution</h3>
-        <EmptyState 
-          title="No data to visualize" 
-          subtitle="Upload data to see the latency distribution chart."
-        />
+      <div className="rounded-lg border border-dashed border-slate-200 bg-white p-6 text-center text-slate-500">
+        No data to visualize.
       </div>
     );
   }
@@ -82,22 +98,13 @@ export const HistogramLatency: React.FC<Props> = ({
       <ResponsiveContainer width="100%" height={320}>
         <BarChart 
           data={data} 
-          margin={{ top: 24, right: 10, bottom: 24, left: 10 }}
-          onClick={(e: unknown) => {
-            if (!onSelectRange) return;
-
-            const event = e as { activeIndex?: string | number; event?: MouseEvent };
-            if (event?.activeIndex != null && data) {
-              const index = typeof event.activeIndex === 'string' 
-                ? parseInt(event.activeIndex) 
-                : event.activeIndex;
-              if (!isNaN(index) && data[index]) {
-                const payload = data[index];
-                const range = { min: payload.startMs as number, max: payload.endMs as number };
-                const additive = !!(event?.event?.shiftKey);
-                onSelectRange(range, additive);
-              }
-            }
+          margin={{ top: 25, right: 10, bottom: 24, left: 10 }}
+          onClick={(e: any) => {
+            const payload = e?.activePayload?.[0]?.payload;
+            if (!payload) return;
+            const range = { min: payload.startMs as number, max: payload.endMs as number };
+            const additive = !!(e?.event?.shiftKey);
+            onSelectRange(range, additive);
           }}
         >
           <CartesianGrid strokeDasharray="3 3" />
@@ -125,13 +132,7 @@ export const HistogramLatency: React.FC<Props> = ({
               return [String(value), String(name)] as [string, string];
             }}
           />
-          <Bar 
-            dataKey="count" 
-            fill="#3B82F6" 
-            stroke="#1E40AF" 
-            strokeWidth={1}
-            cursor="pointer"
-          />
+          <Bar dataKey="count" />
           {labelP50 && (
             <ReferenceLine x={labelP50} stroke="#111827" strokeDasharray="3 3">
               <Label value="p50" position="top" />
@@ -155,11 +156,9 @@ export const HistogramLatency: React.FC<Props> = ({
         </BarChart>
       </ResponsiveContainer>
       
-      {onSelectRange && (
-        <div className="mt-1 text-xs text-slate-500">
-          Click a bar to filter by latency range. Shift-click to multi-select.
-        </div>
-      )}
+      <div className="mt-1 text-xs text-slate-500">
+        Click a bar to filter by latency range. Shift-click to multi-select.
+      </div>
     </div>
   );
 };
